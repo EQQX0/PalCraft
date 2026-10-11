@@ -27,7 +27,7 @@ import java.util.List;
  *   use | attack               screenshot &lt;name&gt;         status
  *   critattack (jump, turn to the nearest Palworld enemy, swing while falling)
  *   hold forward|back|left|right|jump|sneak|sprint|attack|use &lt;ticks&gt;   (walks without real key presses or focus)
- *   save | quit
+ *   save | quit | host (Palworld mode, like F8)
  * </pre>
  */
 public final class DevCommands {
@@ -195,6 +195,7 @@ public final class DevCommands {
 				}
 			}
 			case "quit" -> mc.stop();  // saves the world, like the Quit button
+			case "host" -> Overlay.switchToHost(mc);  // F8
 			case "save" -> {
 				// Save the world now without pausing or quitting (single-player has no /save-all).
 				var server = mc.getSingleplayerServer();

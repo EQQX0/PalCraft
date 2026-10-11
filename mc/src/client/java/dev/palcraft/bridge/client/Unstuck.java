@@ -23,7 +23,7 @@ public final class Unstuck {
 
 	public static void tick(Minecraft mc) {
 		LocalPlayer player = mc.player;
-		if (player == null || mc.level == null || player.isSpectator() || player.isPassenger() || !Overlay.active()) {
+		if (player == null || mc.level == null || player.isSpectator() || player.isPassenger() || !Overlay.active() || HostBody.active()) {
 			stuckTicks = 0;
 			return;
 		}

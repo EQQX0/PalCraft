@@ -63,6 +63,9 @@ public final class LifeBridge {
 			return;
 		}
 		lastHostDeaths = deaths;
+		if (HostBodyServer.hostMode) {
+			return;  // Palworld mode: its own death and respawn rules apply, Steve keeps his Minecraft life and items
+		}
 		DamageSource source = new DamageSource(server.overworld().registryAccess()
 			.registryOrThrow(Registries.DAMAGE_TYPE).getHolderOrThrow(HOST_DEATH));
 		for (ServerPlayer player : server.getPlayerList().getPlayers()) {

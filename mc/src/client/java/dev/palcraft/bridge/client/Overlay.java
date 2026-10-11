@@ -32,7 +32,7 @@ public final class Overlay {
 
 	private static boolean transparentWindow;
 	private static boolean active;
-	/** The player handed control to the host game (F8): our window is hidden and Minecraft is paused. */
+	/** The player handed control to the host game (F8): our window is hidden; Steve's body follows its character. */
 	private static boolean hostMode;
 	private static int lastSwitchReq = Integer.MIN_VALUE;
 	private static long window;
@@ -91,8 +91,8 @@ public final class Overlay {
 		}
 		hostMode = true;
 		CameraSync.suspend();
-		if (mc.level != null && mc.screen == null) {
-			mc.pauseGame(false);
+		if (mc.screen != null) {
+			mc.setScreen(null);
 		}
 		mc.mouseHandler.releaseMouse();
 		// Hiding an owned window can immediately focus Palworld. Publish the
@@ -109,6 +109,8 @@ public final class Overlay {
 		}
 		hostMode = false;
 		hostPreparationPending = true;
+		HostBody.update(mc, false, false);
+		TerrainManager.requestRecall();
 		if (GLFW.glfwGetWindowAttrib(window, GLFW.GLFW_ICONIFIED) == GLFW.GLFW_TRUE) {
 			GLFW.glfwRestoreWindow(window);
 		}
@@ -197,7 +199,8 @@ public final class Overlay {
 		// finishes loading; never expose the ordinary void world during that gap.
 		boolean inWorld = (haveState && (now - lastInWorldMs < 3000 || STATE.has(Protocol.STATE_HOST_BUSY)))
 				|| (haveClientWorld && haveHostWindow);
-		boolean want = transparentWindow && window != 0L && inWorld && !hostMode
+		// Palworld mode keeps the overlay alive: Steve's body is still drawn into Palworld's frame.
+		boolean want = transparentWindow && window != 0L && inWorld
 				&& GLFW.glfwGetWindowMonitor(window) == 0L;
 		if (want) {
 			lastWantMs = now;
@@ -205,7 +208,7 @@ public final class Overlay {
 		// Turn on immediately, but only turn off after a sustained reason (or a user toggle).
 		if (want && !active) {
 			setActive(mc, true);
-		} else if (!want && active && (hostMode || now - lastWantMs > 1500)) {
+		} else if (!want && active && now - lastWantMs > 1500) {
 			setActive(mc, false);
 		}
 		if (active && STATE.has(Protocol.STATE_WINDOW_VALID)) {
@@ -222,6 +225,7 @@ public final class Overlay {
 			LOG.info(busy ? "Palworld shows its own screen (death, loading or recall): drawing nothing"
 				: "Drawing again");
 		}
+		HostBody.update(mc, hostMode, hostMode && active && !busy && haveClientWorld && alive);
 		if (!active || busy) {
 			CameraSync.suspend();
 		}
@@ -230,7 +234,7 @@ public final class Overlay {
 			WindowsOverlay.update(window, active && !hostMode, busy || FramePassthrough.activeInHost(),
 					link.hostProcessId());
 		}
-		if (active && focusPending && haveClientWorld && readyToFocus(mc, hostBusyNow) && !busy) {
+		if (active && focusPending && !hostMode && haveClientWorld && readyToFocus(mc, hostBusyNow) && !busy) {
 			// Show and focus only after ownership, geometry and opacity have been applied.
 			if (Platform.get() == Platform.WINDOWS) {
 				focusPending = !WindowsOverlay.showAboveHost(window, link.hostProcessId());

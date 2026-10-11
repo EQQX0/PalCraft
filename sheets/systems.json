@@ -14,7 +14,7 @@
     ["pal_damage",   "palworld",       "reports HP the character lost",                 "CombatBridge hurts Steve",                    ["hunter"],                             "host/lua/PalCraft/Scripts/combat.lua",   true],
     ["life",         "shared",         "counts deaths and respawns both ways",          "LifeBridge kills / respawns Steve",           ["header"],                             "host/lua/PalCraft/Scripts/life.lua",     true],
     ["input_switch", "shared",         "F8 in Palworld asks Minecraft to take over",    "Overlay window glued over the Palworld one",  ["header", "state"],                    "host/native/src/palcraft.cpp",           true],
-    ["starter_kit",  "minecraft-java", "-",                                             "gives kit.json once per world",               [],                                     "mc/src/main/java/dev/palcraft/bridge/StarterKit.java", true],
+    ["starter_kit",  "minecraft-java", "-",                                             "gives kit.json once per player; newer kit waves top up an older kit",               [],                                     "mc/src/main/java/dev/palcraft/bridge/StarterKit.java", true],
     ["time_weather", "minecraft-java", "-",                                             "/time and /weather",                          ["environment"],                        "-",                                      false],
     ["self_test",    "palworld",       "reports which parts came alive in a Melty test", "-",                                         ["state", "rays"],                      "host/lua/PalCraft/Scripts/selftest.lua", true],
     ["host_action",  "palworld",       "answers unsupported",                           "G key",                                       ["header"],                             "host/lua/PalCraft/Scripts/life.lua",     true],
@@ -29,6 +29,9 @@
     ["body_hud", "minecraft-java", "-", "temperature gauge above the hunger bar, frost on the screen when cold; the bundled AppleSkin draws saturation", ["body"], "mc/src/client/java/dev/palcraft/bridge/client/BodyHud.java", true],
     ["body_warmth", "minecraft-java", "-", "finds fire, torches, water and ice around Steve; leather armor counts as warmth", ["body"], "mc/src/main/java/dev/palcraft/bridge/BodyBridge.java", true],
     ["armor", "minecraft-java", "-", "a Pal's hit goes through Minecraft's armor, toughness, Protection and shield rules and wears the armor; cold, heat and poison go past armor as in Minecraft", ["hunter"], "mc/src/main/resources/data/minecraft/tags/damage_type/bypasses_armor.json", true],
-    ["apple_recipe", "minecraft-java", "-", "the old recipe is back: eight gold blocks around an apple make an enchanted golden apple", [], "mc/src/main/resources/data/palcraft/recipe/enchanted_golden_apple.json", true]
+    ["apple_recipe", "minecraft-java", "-", "the old recipe is back: eight gold blocks around an apple make an enchanted golden apple", [], "mc/src/main/resources/data/palcraft/recipe/enchanted_golden_apple.json", true],
+    ["autosave", "minecraft-java", "-", "saves the PalCraft world every autosave_s seconds and the moment Palworld goes away, because the launcher may stop Minecraft without asking", ["header"], "mc/src/main/java/dev/palcraft/bridge/Autosave.java", true],
+    ["steve_body", "palworld", "in Palworld mode its own camera leads, shown a few frames late so Minecraft can match it; the character stays hidden", "draws Steve where the character stands, walking with it; Steve takes no Minecraft damage meanwhile", ["control", "luastate", "state"], "mc/src/client/java/dev/palcraft/bridge/client/HostBody.java", true],
+    ["kill_exp", "palworld", "a Pal that Steve's hit kills gives the Palworld character experience by its level; reports level and experience earned", "shows the experience above the hotbar and a level-up message", ["damage", "body"], "host/lua/PalCraft/Scripts/combat.lua", true]
   ]
 }

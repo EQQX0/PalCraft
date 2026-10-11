@@ -21,6 +21,24 @@ local function to_hp(amount, maxHp)
     return amount * maxHp / pool * P.tune.pal_damage_scale
 end
 
+-- System "kill_exp": the slip damage below has no attacker, so Palworld gives nothing for the kill. The
+-- character gets experience by the Pal's level instead, through the call Palworld uses for nearby players.
+local UTIL
+local function reward(env, e, cp)
+    local level = 1
+    pcall(function() level = math.max(1, cp.IndividualParameter:GetLevel()) end)
+    pcall(function()
+        local mine = env.pawn.CharacterParameterComponent.IndividualParameter:GetLevel()
+        level = math.min(level, mine + P.tune.kill_exp_level_lead)
+    end)
+    local exp = P.tune.kill_exp_base * level ^ P.tune.kill_exp_power
+    if e.kind == P.ent.LARGE then exp = exp * P.tune.kill_exp_boss end
+    exp = math.floor(exp + 0.5)
+    UTIL = UTIL or StaticFindObject("/Script/Pal.Default__PalUtility")
+    UTIL:GiveExpToAroundPlayerCharacter(env.pawn, env.pawn:K2_GetActorLocation(), 300.0, exp, true)
+    env.killExp = ((env.killExp or 0) + exp) % 0x100000000
+end
+
 local function apply(env, id, amount, hx, hy, hz)
     local e = entities.find(id)
     if not e or e.kind == P.ent.OTHER or amount <= 0 or not e.actor:IsValid() then return end
@@ -30,7 +48,10 @@ local function apply(env, id, amount, hx, hy, hz)
     local dx, dz = e.pos[1] - env.feet[1], e.pos[3] - env.feet[3]
     local n = math.max(0.01, math.sqrt(dx * dx + dz * dz))
     local vx, vy, vz = U.to_ue(dx / n * 4, 3, dz / n * 4)
+    local cp = e.actor.CharacterParameterComponent
+    local alive = cp and cp:IsValid() and not cp:IsDead()
     dr:SlipDamageAndBlowWhenDead(math.max(1, math.floor(to_hp(amount, e.maxHp) + 0.5)), { X = vx, Y = vy, Z = vz })
+    if alive and cp:IsDead() then U.guard("kill_exp", reward, env, e, cp) end
 end
 
 local function drain(env)

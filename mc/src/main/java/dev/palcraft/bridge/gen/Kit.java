@@ -5,26 +5,29 @@ public final class Kit {
 	private Kit() {
 	}
 
-	/** slot, item id, count. */
+	/** slot, item id, count, wave. */
 	public static final Object[][] STACKS = {
-		{0, "minecraft:iron_sword", 1},
-		{1, "minecraft:bow", 1},
-		{2, "minecraft:iron_pickaxe", 1},
-		{3, "minecraft:cobblestone", 64},
-		{4, "minecraft:oak_planks", 64},
-		{5, "minecraft:glass", 32},
-		{6, "minecraft:tnt", 8},
-		{7, "minecraft:flint_and_steel", 1},
-		{8, "minecraft:cooked_beef", 16},
-		{9, "minecraft:arrow", 64},
-		{10, "minecraft:torch", 32},
-		{11, "minecraft:ladder", 16},
-		{12, "minecraft:oak_door", 2},
-		{13, "minecraft:water_bucket", 1},
-		{14, "minecraft:water_bucket", 1},
-		{15, "minecraft:wheat_seeds", 8},
-		{16, "minecraft:oak_sapling", 4},
-		{17, "minecraft:crafting_table", 1},
-		{18, "minecraft:golden_apple", 2},
+		{0, "minecraft:iron_sword", 1, 1},
+		{1, "minecraft:bow", 1, 1},
+		{2, "minecraft:iron_pickaxe", 1, 1},
+		{3, "minecraft:cobblestone", 64, 1},
+		{4, "minecraft:oak_planks", 64, 1},
+		{5, "minecraft:glass", 32, 1},
+		{6, "minecraft:tnt", 8, 1},
+		{7, "minecraft:flint_and_steel", 1, 1},
+		{8, "minecraft:cooked_beef", 16, 1},
+		{9, "minecraft:arrow", 64, 1},
+		{10, "minecraft:torch", 32, 1},
+		{11, "minecraft:ladder", 16, 1},
+		{12, "minecraft:oak_door", 2, 1},
+		{13, "minecraft:water_bucket", 1, 2},
+		{14, "minecraft:water_bucket", 1, 2},
+		{15, "minecraft:wheat_seeds", 8, 2},
+		{16, "minecraft:oak_sapling", 4, 2},
+		{17, "minecraft:crafting_table", 1, 2},
+		{18, "minecraft:golden_apple", 2, 2},
 	};
+
+	/** The newest wave in the sheet. */
+	public static final int WAVES = 2;
 }

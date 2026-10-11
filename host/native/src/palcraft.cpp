@@ -1030,7 +1030,8 @@ static void publish_state(const LuaView& lua, UINT bbW, UINT bbH) {
     if (now_ms() - g_lastCompositeMs < 500) flags |= PC_STATE_COMPOSITING;
     if (lua.fresh) {
         flags |= lua.get<uint32_t>(PC_LUA_STATE_FLAGS) &
-                 (PC_STATE_CAMERA_VALID | PC_STATE_PLAYER_VALID | PC_STATE_CAM_OVERRIDDEN | PC_STATE_PLAYER_DEAD | PC_STATE_HOST_BUSY);
+                 (PC_STATE_CAMERA_VALID | PC_STATE_PLAYER_VALID | PC_STATE_CAM_OVERRIDDEN | PC_STATE_PLAYER_DEAD | PC_STATE_HOST_BUSY |
+                  PC_STATE_BODY_CROUCH | PC_STATE_BODY_SWIM | PC_STATE_BODY_ACT);
         memcpy(local + PC_GAME_STATE_CAM_POS, lua.raw + PC_LUA_STATE_CAM_POS, 36);  // pos, target, up
         memcpy(local + PC_GAME_STATE_FOV_YDEG, lua.raw + PC_LUA_STATE_FOV_YDEG, 12);  // fov, near, far
         memcpy(local + PC_GAME_STATE_PLAYER_POS, lua.raw + PC_LUA_STATE_PLAYER_POS, 28);  // pos, quat

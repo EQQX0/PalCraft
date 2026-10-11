@@ -14,6 +14,9 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 @Mixin(Camera.class)
 public abstract class CameraMixin implements CameraSync.CameraAccess {
 	@Shadow
+	private boolean detached;
+
+	@Shadow
 	protected abstract void setPosition(Vec3 pos);
 
 	@Shadow
@@ -33,5 +36,10 @@ public abstract class CameraMixin implements CameraSync.CameraAccess {
 	@Override
 	public void palcraft$setRotation(float yaw, float pitch) {
 		setRotation(yaw, pitch);
+	}
+
+	@Override
+	public void palcraft$setDetached(boolean value) {
+		detached = value;
 	}
 }

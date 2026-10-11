@@ -97,6 +97,7 @@ public class ErBridgeClient implements ClientModInitializer {
 					? "Palworld character stands in for you (enemies can hit you)" : "Palworld character stays put and visible");
 			}
 			WorldBootstrap.tick(mc);
+			HostBody.tick(mc);
 			Unstuck.tick(mc);
 			GatherClient.tick(mc);
 			BodyHud.tick(mc);
@@ -105,6 +106,9 @@ public class ErBridgeClient implements ClientModInitializer {
 		});
 
 		HudRenderCallback.EVENT.register((graphics, tickCounter) -> {
+			if (HostBody.active()) {
+				return;  // Palworld's HUD is the one on screen
+			}
 			renderPrompt(graphics);
 			BodyHud.render(Minecraft.getInstance(), graphics);
 			renderStatus(graphics);

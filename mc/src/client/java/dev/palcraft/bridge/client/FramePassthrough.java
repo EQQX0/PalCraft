@@ -188,7 +188,7 @@ public final class FramePassthrough {
 
 	/** Whether frames are being captured (then CameraSync leaves pose publishing to us). */
 	public static boolean wanted() {
-		return enabled && !failed && Overlay.active() && !Overlay.hostMode() && CameraSync.mode() == CameraSync.Mode.DRIVE_HOST && CameraSync.driving()
+		return enabled && !failed && Overlay.active() && (!Overlay.hostMode() || HostBody.active()) && CameraSync.mode() == CameraSync.Mode.DRIVE_HOST && CameraSync.driving()
 			&& fits(Minecraft.getInstance().getMainRenderTarget());
 	}
 

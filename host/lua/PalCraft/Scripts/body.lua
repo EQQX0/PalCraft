@@ -69,7 +69,9 @@ function M.tick(env)
     local info = comp.TemperatureInfo
     local t, heat, cold = info.CurrentTemperature, info.CurrentResistRank_Heat, info.CurrentResistRank_Cold
     exposed = t > heat or t < -cold
-    shm.write(OFF + B.temperature[1], string.pack("<i4i4i4fI4", t, heat, cold, stomach, 1))
+    local level = 0
+    pcall(function() level = cp.IndividualParameter:GetLevel() end)
+    shm.write(OFF + B.temperature[1], string.pack("<i4i4i4fI4i4I4", t, heat, cold, stomach, 1, level, env.killExp or 0))
 end
 
 return M

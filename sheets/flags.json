@@ -10,6 +10,9 @@
     ["state", "COMPOSITING",    "0x040", "native", "STATE_COMPOSITING",    "Palworld is drawing the Minecraft frames"],
     ["state", "PLAYER_DEAD",    "0x080", "lua",    "STATE_PLAYER_DEAD",    "the character is dying or dead"],
     ["state", "HOST_BUSY",      "0x100", "lua",    "STATE_HOST_BUSY",      "no usable character: title, loading, respawning"],
+    ["state", "BODY_CROUCH",    "0x200", "lua",    "STATE_BODY_CROUCH",    "Palworld mode: the character crouches or slides"],
+    ["state", "BODY_SWIM",      "0x400", "lua",    "STATE_BODY_SWIM",      "Palworld mode: the character swims"],
+    ["state", "BODY_ACT",       "0x800", "lua",    "STATE_BODY_ACT",       "Palworld mode: the attack button is held in play"],
 
     ["ctrl", "OVERRIDE_CAMERA", "0x001", "mc", "CTRL_OVERRIDE_CAMERA", "render Palworld from camPos/camTarget/fov"],
     ["ctrl", "MOVE_HUNTER",     "0x002", "mc", "CTRL_MOVE_HUNTER",     "keep the character at hunterPos"],
@@ -20,6 +23,7 @@
     ["ctrl", "NO_RELIGHT",      "0x080", "mc", "-",                    "debug: no Palworld lighting on blocks"],
     ["ctrl", "GROUNDED",        "0x100", "mc", "CTRL_GROUNDED",        "Steve stands on something"],
     ["ctrl", "FLYING",          "0x200", "mc", "CTRL_FLYING",          "creative flight"],
+    ["ctrl", "HOST_BODY",       "0x400", "mc", "CTRL_HOST_BODY",       "Palworld has the controls: camPos/camTarget echo its own camera, its HUD stays, Steve is drawn where the character stands"],
 
     ["frame", "WORLD", "0x1", "mc", "-", "slot has world colour + depth"],
     ["frame", "HUD",   "0x2", "mc", "-", "slot has a HUD layer"],

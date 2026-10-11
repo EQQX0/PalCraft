@@ -6,6 +6,7 @@ local M = {}
 
 local cam            -- our CameraActor
 local onCam = false  -- the player's view target is our camera
+local yielding = false -- Palworld took the view for a cutscene; ours is waiting
 local tags = {}      -- frame tag render targets
 local KRL, UI
 local black = { R = 0, G = 0, B = 0, A = 1 }
@@ -23,7 +24,10 @@ local function ensure_cam(pawn)
 end
 
 -- Palworld's own HUD would sit on top of Minecraft's: it is hidden while Minecraft's camera is in use.
+local hudVisible = true
 local function hud(pawn, visible)
+    if visible == hudVisible then return end
+    hudVisible = visible
     UI = UI or StaticFindObject("/Script/Pal.Default__PalUIUtility")
     pcall(function() UI:SetVisibilityHUD(pawn, visible) end)
 end
@@ -37,7 +41,8 @@ local function ue_fov(pc, fovY, aspect)
 end
 
 -- Renders this frame from the pose in ctrl (host metres). Returns true when the pose was applied.
-function M.apply(pc, pawn, pos, target, fovY, aspect)
+-- keepHud: Palworld has the controls and needs its own HUD.
+function M.apply(pc, pawn, pos, target, fovY, aspect, keepHud)
     local c = ensure_cam(pawn)
     if not c or not c:IsValid() then return false end
     local ex, ey, ez = U.to_ue(pos[1], pos[2], pos[3])
@@ -46,18 +51,32 @@ function M.apply(pc, pawn, pos, target, fovY, aspect)
     local flat = math.sqrt(dx * dx + dy * dy)
     if flat + math.abs(dz) < 1e-4 then return false end
     local rot = { Pitch = math.deg(math.atan(dz, flat)), Yaw = math.deg(math.atan(dy, dx)), Roll = 0 }
+    -- Palworld moves the view itself for a cutscene or a boss entrance. That is its picture to show: ours
+    -- waits until the view is back on the character.
+    local view = pc:GetViewTarget()
+    local at = view and view:IsValid() and view:GetAddress() or 0
+    if onCam and at ~= c:GetAddress() and at ~= pawn:GetAddress() then
+        if not yielding then
+            yielding = true
+            U.log("camera: Palworld shows its own view (" .. view:GetFullName():match("[%w_]+") .. "); waiting")
+        end
+        hud(pawn, true)
+        return false
+    end
+    yielding = false
     c:K2_SetActorLocationAndRotation({ X = ex, Y = ey, Z = ez }, rot, false, {}, true)
     c.CameraComponent:SetFieldOfView(ue_fov(pc, fovY, aspect))
-    if not onCam or pc:GetViewTarget() ~= c then
+    if not onCam or at ~= c:GetAddress() then
         pc:SetViewTargetWithBlend(c, 0.0, 0, 0.0, false)
-        if not onCam then hud(pawn, false) end
         onCam = true
     end
+    hud(pawn, keepHud == true)
     return true
 end
 
 -- Hands the view back to Palworld's own camera.
 function M.release(pc, pawn)
+    yielding = false
     if onCam then
         onCam = false
         if pawn and pawn:IsValid() then
@@ -68,6 +87,22 @@ function M.release(pc, pawn)
 end
 
 function M.overridden() return onCam end
+
+-- True while Palworld shows a view of its own and ours waits.
+function M.yielding() return yielding end
+
+-- The camera Palworld wants while ours is the view target: the character's own follow camera, which its
+-- spring arm keeps moving. In host metres: pos, target, fovY.
+function M.body(pc, pawn, aspect)
+    local c = pawn.FollowCamera
+    if not c or not c:IsValid() then return M.own(pc, aspect) end
+    local l, r = c:K2_GetComponentLocation(), c:K2_GetComponentRotation()
+    local px, py, pz = U.to_host(l.X, l.Y, l.Z)
+    local cp, sp = math.cos(math.rad(r.Pitch)), math.sin(math.rad(r.Pitch))
+    local fx, fy, fz = U.to_host(cp * math.cos(math.rad(r.Yaw)) * 100, cp * math.sin(math.rad(r.Yaw)) * 100, sp * 100)
+    local fovY = math.deg(2 * math.atan(math.tan(math.rad(c.FieldOfView) / 2) / aspect))
+    return { px, py, pz }, { px + fx, py + fy, pz + fz }, fovY
+end
 
 -- Palworld's own camera, in host metres: pos, target, fovY.
 function M.own(pc, aspect)

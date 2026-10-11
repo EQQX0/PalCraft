@@ -70,6 +70,8 @@ public class ErBridgeMod implements ModInitializer {
 			EntityBridge.reset();
 			CombatBridge.reset();
 			Gather.reset();
+			Autosave.reset();
+			HostBodyServer.reset();
 			dev.palcraft.bridge.entity.PalLoot.reset();
 		});
 		ServerTickEvents.END_SERVER_TICK.register(TerrainManager::onServerTick);
@@ -79,6 +81,11 @@ public class ErBridgeMod implements ModInitializer {
 		ServerTickEvents.END_SERVER_TICK.register(CombatBridge::onServerTick);
 		ServerTickEvents.END_SERVER_TICK.register(LifeBridge::onServerTick);
 		ServerTickEvents.END_SERVER_TICK.register(WorldEnvironmentBridge::onServerTick);
+		ServerTickEvents.END_SERVER_TICK.register(Autosave::onServerTick);
+		ServerTickEvents.END_SERVER_TICK.register(HostBodyServer::onServerTick);
+		// Palworld mode: Palworld's health and hunger are the ones in play, Steve's are left alone.
+		ServerLivingEntityEvents.ALLOW_DAMAGE.register((entity, source, amount) ->
+			!(entity instanceof net.minecraft.server.level.ServerPlayer && HostBodyServer.hostMode && TerrainManager.isBridgeWorld()));
 		ServerLivingEntityEvents.AFTER_DEATH.register(LifeBridge::onDeath);
 		ServerPlayerEvents.AFTER_RESPAWN.register(LifeBridge::onRespawn);
 		ServerPlayConnectionEvents.JOIN.register((handler, sender, server) -> TerrainManager.onJoin(server, handler.player));

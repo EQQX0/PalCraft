@@ -85,11 +85,13 @@ local function on_tick(pc)
     if hasPawn then
         flags = flags | P.state.PLAYER_VALID | P.state.CAMERA_VALID
         local usable = ctrl ~= nil and not env.busy
+        -- Palworld mode: the pose is Palworld's own camera, echoed by Minecraft once Steve is drawn for it.
+        local body = usable and cflags & P.ctrl.HOST_BODY ~= 0
         if usable and cflags & P.ctrl.OVERRIDE_CAMERA ~= 0 then
             local px, py, pz = shm.field(ctrl, C.camPos)
             local tx, ty, tz = shm.field(ctrl, C.camTarget)
             local f = shm.field(ctrl, C.fovYDeg)
-            if camera.apply(pc, pawn, { px, py, pz }, { tx, ty, tz }, f, aspect) then
+            if camera.apply(pc, pawn, { px, py, pz }, { tx, ty, tz }, f, aspect, body) then
                 pose = shm.field(ctrl, C.mcFrame)
                 camPos, camTarget, fovY = { px, py, pz }, { tx, ty, tz }, f
                 flags = flags | P.state.CAM_OVERRIDDEN
@@ -103,8 +105,14 @@ local function on_tick(pc)
         else
             standin.release(pawn)
         end
-        standin.hide(pawn, usable and cflags & P.ctrl.HIDE_HUNTER ~= 0)
-        if pose == 0 then camPos, camTarget, fovY = camera.own(pc, aspect) end
+        -- In a cutscene Palworld's camera shows its own character: Steve is not drawn there.
+        standin.hide(pawn, usable and cflags & P.ctrl.HIDE_HUNTER ~= 0 and not camera.yielding())
+        if body then
+            camPos, camTarget, fovY = camera.body(pc, pawn, aspect)
+            flags = flags | (U.guard("pose_flags", standin.pose_flags, pc, pawn, P.state) or 0)
+        elseif pose == 0 then
+            camPos, camTarget, fovY = camera.own(pc, aspect)
+        end
         feet, quat = standin.where(pawn)
         camera.tag(pawn, k)
         if dev and tick % 30 == 0 then centerDist = U.guard("trace_center", trace_center, pawn, camPos, camTarget) or 0 end

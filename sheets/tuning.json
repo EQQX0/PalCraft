@@ -29,6 +29,11 @@
     ["body_period_ms", 1000, "ms", "lua", "how often Palworld takes Steve's food and reports temperature"],
     ["heat_settle_ms", 4000, "ms", "lua", "after changing its heat source, the mod waits this long for Palworld's temperature to follow"],
     ["pal_box_min_radius_m", 0.45, "m", "lua", "narrowest hitbox half-width a Pal gets in Minecraft"],
-    ["pal_box_min_half_m", 0.5, "m", "lua", "lowest hitbox half-height a Pal gets in Minecraft"]
+    ["pal_box_min_half_m", 0.5, "m", "lua", "lowest hitbox half-height a Pal gets in Minecraft"],
+    ["autosave_s", 45, "s", "mc", "the PalCraft world is saved this often while both games run"],
+    ["kill_exp_base", 18, "exp", "lua", "Palworld experience for a level 1 Pal that Steve kills"],
+    ["kill_exp_power", 1.35, "x", "lua", "how fast that experience grows with the Pal's level: base * level ^ power"],
+    ["kill_exp_boss", 6, "x", "lua", "multiplier for an alpha or boss"],
+    ["kill_exp_level_lead", 4, "levels", "lua", "a Pal counts as at most this many levels above the character, so an easy win over a strong Pal does not skip the early game"]
   ]
 }

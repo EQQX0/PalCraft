@@ -196,6 +196,8 @@ P.Body = {
     ["resistCold"] = { 0x18, "<i4", 4 },
     ["stomach"] = { 0x1C, "<f", 4 },
     ["valid"] = { 0x20, "<I4", 4 },
+    ["level"] = { 0x24, "<i4", 4 },
+    ["killExp"] = { 0x28, "<I4", 4 },
 }
 P.state = {
     CAMERA_VALID = 0x001,
@@ -206,6 +208,9 @@ P.state = {
     COMPOSITING = 0x040,
     PLAYER_DEAD = 0x080,
     HOST_BUSY = 0x100,
+    BODY_CROUCH = 0x200,
+    BODY_SWIM = 0x400,
+    BODY_ACT = 0x800,
 }
 P.ctrl = {
     OVERRIDE_CAMERA = 0x001,
@@ -217,6 +222,7 @@ P.ctrl = {
     NO_RELIGHT = 0x080,
     GROUNDED = 0x100,
     FLYING = 0x200,
+    HOST_BODY = 0x400,
 }
 P.frame = {
     WORLD = 0x1,
@@ -292,6 +298,10 @@ P.tune = {
     heat_settle_ms = 4000,
     pal_box_min_radius_m = 0.45,
     pal_box_min_half_m = 0.5,
+    kill_exp_base = 18,
+    kill_exp_power = 1.35,
+    kill_exp_boss = 6,
+    kill_exp_level_lead = 4,
 }
 P.hook = {
     tick = "/Game/Pal/Blueprint/Controller/BP_PalPlayerController.BP_PalPlayerController_C:ReceiveTick",

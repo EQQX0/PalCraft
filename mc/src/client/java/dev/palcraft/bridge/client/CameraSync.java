@@ -33,6 +33,9 @@ public final class CameraSync {
 		void palcraft$setPosition(Vec3 pos);
 
 		void palcraft$setRotation(float yaw, float pitch);
+
+		/** Detached = the camera is not in the player's head, so the player's own body is drawn. */
+		void palcraft$setDetached(boolean value);
 	}
 
 	private static Mode mode = Mode.DRIVE_HOST;
@@ -115,6 +118,11 @@ public final class CameraSync {
 		Minecraft mc = Minecraft.getInstance();
 		CoordMap.Mapping map = CoordMap.get();
 		boolean haveState = ErLink.get().snapshot(STATE);
+		if (HostBody.active() && map != null && haveState && STATE.has(Protocol.STATE_CAMERA_VALID)
+				&& STATE.has(Protocol.STATE_PLAYER_VALID) && !map.provisional() && map.zone() == STATE.stageId) {
+			followHostBody(mc, map, camera);
+			return;
+		}
 		if (!Overlay.active() || Overlay.hostMode() || Overlay.hostBusy() || map == null || !haveState
 				|| (mode == Mode.DRIVE_HOST && !ready(mc, map))) {
 			releaseHostCamera();
@@ -183,6 +191,43 @@ public final class CameraSync {
 			ErLink.get().writeControl(CONTROL);
 		}
 		// With passthrough, FramePassthrough sends this pose once the frame's pixels are ready.
+	}
+
+	/**
+	 * Palworld mode: render from Palworld's own camera with Steve standing where its character does, and hand
+	 * that same pose back so Palworld shows it together with these pixels.
+	 */
+	private static void followHostBody(Minecraft mc, CoordMap.Mapping map, Camera camera) {
+		Vec3 pos = map.toMc(STATE.camPos[0], STATE.camPos[1], STATE.camPos[2]);
+		Vec3 dir = map.dirToMc(STATE.camTarget[0] - STATE.camPos[0], STATE.camTarget[1] - STATE.camPos[1],
+			STATE.camTarget[2] - STATE.camPos[2]).normalize();
+		float yaw = (float) Math.toDegrees(Math.atan2(-dir.x, dir.z));
+		float pitch = (float) Math.toDegrees(-Math.asin(Math.max(-1.0, Math.min(1.0, dir.y))));
+		HostBody.place(mc, map, STATE, Math.max(-40.0F, Math.min(40.0F, pitch * 0.6F)));
+		CameraAccess access = (CameraAccess) camera;
+		access.palcraft$setRotation(yaw, pitch);
+		access.palcraft$setPosition(pos);
+		access.palcraft$setDetached(true);
+		fov = STATE.fovYDeg > 1.0F ? STATE.fovYDeg : mc.options.fov().get();
+		driving = true;
+		boolean passthrough = FramePassthrough.wanted();
+		CONTROL.flags = Protocol.CTRL_OVERRIDE_CAMERA | Protocol.CTRL_HIDE_HUNTER | Protocol.CTRL_HOST_BODY
+			| (passthrough ? Protocol.CTRL_COMPOSITE : 0) | (noDepthTest ? Protocol.CTRL_NO_DEPTH_TEST : 0)
+			| (debugDepth ? Protocol.CTRL_DEBUG_DEPTH : 0);
+		CONTROL.poseLag = poseLag;
+		CONTROL.depthIndex = depthIndex;
+		CONTROL.mcFrame++;
+		for (int i = 0; i < 3; i++) {
+			CONTROL.camPos[i] = STATE.camPos[i];
+			CONTROL.camTarget[i] = STATE.camTarget[i];
+			CONTROL.camUp[i] = i == 1 ? 1.0F : 0.0F;
+			CONTROL.hunterPos[i] = STATE.playerPos[i];
+		}
+		CONTROL.fovYDeg = fov;
+		controlling = true;
+		if (!passthrough) {
+			ErLink.get().writeControl(CONTROL);
+		}
 	}
 
 	/** Release control even when a pause screen prevents Camera.setup from running. */

@@ -15,4 +15,6 @@ public final class Tune {
 	public static final double DIG_RESPAWN_S = 90.0;
 	/** how far a fire or a block of ice reaches (blocks) */
 	public static final double WARMTH_RADIUS = 5.0;
+	/** the PalCraft world is saved this often while both games run (s) */
+	public static final double AUTOSAVE_S = 45.0;
 }

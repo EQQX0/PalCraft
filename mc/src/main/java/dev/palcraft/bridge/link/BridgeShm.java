@@ -233,6 +233,10 @@ public final class BridgeShm {
 		out[0] = buf.getInt(base + Protocol.B_TEMPERATURE);
 		out[1] = buf.getInt(base + Protocol.B_RESIST_HEAT);
 		out[2] = buf.getInt(base + Protocol.B_RESIST_COLD);
+		if (out.length >= 5) {
+			out[3] = buf.getInt(base + Protocol.B_LEVEL);
+			out[4] = buf.getInt(base + Protocol.B_KILL_EXP);
+		}
 		return buf.getInt(base + Protocol.B_VALID) == 1;
 	}
 

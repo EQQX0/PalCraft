@@ -59,6 +59,10 @@ public final class Protocol {
 	public static final int STATE_PLAYER_DEAD = 1 << 7;
 	/** Dead, loading or settling after one: keep the overlay, draw nothing over Palworld. */
 	public static final int STATE_HOST_BUSY = 1 << 8;
+	/** Palworld mode: what the character's body is doing, for Steve to copy. */
+	public static final int STATE_BODY_CROUCH = 1 << 9;
+	public static final int STATE_BODY_SWIM = 1 << 10;
+	public static final int STATE_BODY_ACT = 1 << 11;
 	public static final int STATE_SUPPORT_VALID = 1 << 9;
 
 	// ErmcGameState offsets (relative to OFF_STATE)
@@ -94,6 +98,8 @@ public final class Protocol {
 	public static final int CTRL_DEBUG_DEPTH = 1 << 6;
 	public static final int CTRL_GROUNDED = 1 << 8;
 	public static final int CTRL_FLYING = 1 << 9;
+	/** Palworld has the controls: its camera leads and Steve is drawn where its character stands. */
+	public static final int CTRL_HOST_BODY = 1 << 10;
 
 	// ErmcControl offsets (relative to OFF_CONTROL)
 	public static final int C_SEQ = 0x00;
@@ -146,6 +152,8 @@ public final class Protocol {
 	public static final int B_RESIST_COLD = 0x18;
 	public static final int B_STOMACH = 0x1C;
 	public static final int B_VALID = 0x20;
+	public static final int B_LEVEL = 0x24;
+	public static final int B_KILL_EXP = 0x28;
 
 	// Ray queries (ErmcRayHeader), relative to OFF_RAYS
 	public static final int OFF_RAYS = 0x100000;

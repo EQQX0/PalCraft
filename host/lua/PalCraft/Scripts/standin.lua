@@ -58,4 +58,18 @@ end
 
 function M.carried() return carried end
 
+-- Palworld mode: what the character's body is doing, as state flags for Steve to copy.
+local attackKey
+function M.pose_flags(pc, pawn, S)
+    local f = 0
+    local cm = pawn.CharacterMovement
+    if cm and cm:IsValid() then
+        if cm.MovementMode == 4 then f = f | S.BODY_SWIM -- MOVE_Swimming
+        elseif pawn.bIsCrouched or cm:IsSliding() then f = f | S.BODY_CROUCH end
+    end
+    attackKey = attackKey or { KeyName = FName("LeftMouseButton") }
+    if not pc.bShowMouseCursor and pc:IsInputKeyDown(attackKey) then f = f | S.BODY_ACT end
+    return f
+end
+
 return M
