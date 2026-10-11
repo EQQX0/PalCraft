@@ -31,3 +31,16 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
 - `runtime/dev_in.lua` -> executed on the game thread by the mod, result in `runtime/dev_out.txt`.
 
 ## Log
+- 2026-10-12 0.2.0 survival update. Melty showed 0.1.0 live (published 2026-10-11 20:06 UTC from the creator's
+  side), so this went up as 0.2.0, draft release fe5478d2. Test ce85d3bd: 2 runs, all four self-checks pass.
+  First try failed Melty's loader-errors check on AppleSkin's JEI mixin warning; package.py now drops that
+  mixin config from AppleSkin's fabric.mod.json (Unlicense). Melty removes the old jar on update.
+- Asked for and not shipped: Upgrader items (EXEcheINZ, All Rights Reserved, Modrinth) and Studious Keybinds
+  (StudiousGoose, no license, CurseForge). Fabric 1.21.1 jars are in .tools/dl/extras. Melty's standard wants
+  everything in the release and its license to allow sharing; a fetch-at-launch step was refused. Needs the
+  authors' permission, or the creator's word that they hold the rights.
+- Armor: palcraft:monster and monster_hit stay out of bypasses_armor; measured 9.0 raw -> 8.1 leather,
+  5.22 iron, 2.61 diamond (vanilla formula). Status (cold, heat, poison) bypasses armor by design.
+- Night at the start area is temperature -1 with cold resist 0: Steve freezes slowly unless he holds a torch,
+  stands by a fire or wears leather.
+- This PC's installed world had Steve in creative (playerGameType 1); set back to survival during the test.
