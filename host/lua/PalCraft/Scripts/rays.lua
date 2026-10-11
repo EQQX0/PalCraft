@@ -23,7 +23,32 @@ local function is_character(hit)
     return ok and yes
 end
 
-local function trace(pawn, sx, sy, sz, ex, ey, ez)
+local function line(pawn, sx, sy, sz, ex, ey, ez)
+    local hit = {}
+    if KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
+            0, false, none, 0, hit, true, black, black, 0.0) then
+        return hit
+    end
+end
+
+-- Palworld's hills and cliffs are shells with one-sided faces: a ray that starts inside one sees nothing of it
+-- and lands on the ground underneath, which would tell Minecraft the hill is open air. A point is inside when
+-- a ray from the sky finds a surface above it and a ray from the point up to that surface finds no ceiling.
+local function buried(pawn, x, y, z)
+    local top = line(pawn, x, y + P.tune.solid_probe_up_m, z, x, y, z)
+    if not top or top.Distance < 1 or is_character(top) then return false end
+    local roofY = top.ImpactPoint.Z / 100
+    if roofY - y < 0.05 then return false end
+    return line(pawn, x, y, z, x, roofY - 0.02, z) == nil
+end
+
+-- hollow: Steve is inside a hill himself (creative flight outruns the sampling). Hills then read as open,
+-- so he can leave the way he came instead of being walled in.
+local function trace(pawn, hollow, sx, sy, sz, ex, ey, ez)
+    local dx, dy, dz = ex - sx, ey - sy, ez - sz
+    if not hollow and dy < 0 and dy * dy > 9 * (dx * dx + dz * dz) and buried(pawn, sx, sy, sz) then
+        return string.pack("<ffffffI4I4", sx, sy, sz, 0, 1, 0, 1, 0)   -- solid right here
+    end
     for _ = 1, 3 do
         local hit = {}
         if not KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
@@ -56,12 +81,13 @@ function M.tick(env)
     if not job or job.seq ~= req then
         count = math.min(count, P.const.MAX_RAYS)
         job = { seq = req, count = count, data = count > 0 and shm.read(OFF + P.const.RAYS_OFF_RAYS, count * RAY) or "", i = 0, out = {} }
+        job.hollow = env.feet ~= nil and buried(env.pawn, env.feet[1], env.feet[2] + 1, env.feet[3])
     end
     local t0, budget, least = os.clock(), P.tune.ray_budget_ms / 1000, P.tune.ray_min_per_tick
     local pawn, data, out, done = env.pawn, job.data, job.out, 0
     while job.i < job.count do
         local sx, sy, sz, ex, ey, ez = string.unpack("<ffffff", data, job.i * RAY + 1)
-        out[#out + 1] = trace(pawn, sx, sy, sz, ex, ey, ez)
+        out[#out + 1] = trace(pawn, job.hollow, sx, sy, sz, ex, ey, ez)
         job.i = job.i + 1
         done = done + 1
         if done >= least and done % 8 == 0 and os.clock() - t0 > budget then break end

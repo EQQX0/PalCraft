@@ -12,13 +12,23 @@ local function movement(pawn, mode)
     if cm and cm:IsValid() then cm:SetMovementMode(mode, 0) end
 end
 
+-- Palworld gives the character its own movement back after a respawn or a hit reaction. Left falling
+-- under a Steve who flies or stands on a tower, it gathers speed and dies when he comes down.
+local function hold(pawn)
+    local cm = pawn.CharacterMovement
+    if cm and cm:IsValid() and cm.MovementMode ~= 0 then
+        cm:StopMovementImmediately()
+        cm:SetMovementMode(0, 0) -- MOVE_None: no falling while Minecraft decides where he is
+    end
+end
+
 -- feet = Steve's feet in host metres, yawDeg = Minecraft yaw.
 function M.carry(pawn, feet, yawDeg)
     if not carried then
         carried = true
         pcall(function() halfHeight = pawn.CapsuleComponent:GetScaledCapsuleHalfHeight() end)
-        movement(pawn, 0) -- MOVE_None: no falling while Minecraft decides where he is
     end
+    hold(pawn)
     local X, Y, Z = U.to_ue(feet[1], feet[2], feet[3])
     pawn:K2_SetActorLocationAndRotation({ X = X, Y = Y, Z = Z + halfHeight }, { Pitch = 0, Yaw = yawDeg + 180, Roll = 0 },
         false, {}, true)

@@ -17,7 +17,7 @@ import org.slf4j.LoggerFactory;
  * One life shared by both games.
  *
  * <ul>
- *   <li>Minecraft's player dies (void, lava, mobs, an Palworld hit that took the last hearts...):
+ *   <li>Minecraft's player dies (void, lava, mobs, a Palworld hit that took the last hearts...):
  *   the DLL kills the standing-in Palworld character with the game's own death ({@code H_MC_DEATHS}).</li>
  *   <li>The standing-in Palworld character dies in Palworld (it never dies of damage, but falling below
  *   the map does it): Minecraft's player dies too ({@code H_HOST_DEATHS}, damage type
@@ -32,7 +32,7 @@ public final class LifeBridge {
 	}
 
 	private static final Logger LOG = LoggerFactory.getLogger("palcraft");
-	/** "Steve died in the Lands Between": the Palworld character died, so Minecraft's player does too. */
+	/** "Steve fell in Palworld": the Palworld character died, so Minecraft's player does too. */
 	public static final ResourceKey<DamageType> HOST_DEATH = ResourceKey.create(Registries.DAMAGE_TYPE,
 		ResourceLocation.fromNamespaceAndPath("palcraft", "host_death"));
 

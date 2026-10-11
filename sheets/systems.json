@@ -7,8 +7,8 @@
     ["frame_tag",    "palworld",       "clears one of 16 tiny render targets per tick", "-",                                           ["luastate"],                           "host/lua/PalCraft/Scripts/camera.lua",   true],
     ["compositor",   "palworld",       "draws world, hand and HUD layers at Present",   "FramePassthrough writes layers to frames.shm", ["frames_hdr", "frames_slot", "state"], "host/native/src/palcraft.cpp",           true],
     ["scene_depth",  "palworld",       "finds the scene depth buffer for occlusion",    "-",                                           ["state"],                              "host/native/src/palcraft.cpp",           true],
-    ["stand_in",     "minecraft-java", "hidden character is carried to where Steve is", "CameraSync publishes hunterPos",              ["control", "luastate"],                "host/lua/PalCraft/Scripts/standin.lua",  true],
-    ["terrain",      "palworld",       "line traces answer ray batches",                "TerrainManager turns hits into collision",    ["rays"],                               "host/lua/PalCraft/Scripts/rays.lua",     true],
+    ["stand_in",     "minecraft-java", "hidden character is carried to Steve, held still", "CameraSync publishes hunterPos",              ["control", "luastate"],                "host/lua/PalCraft/Scripts/standin.lua",  true],
+    ["terrain",      "palworld",       "line traces answer rays; hills solid from outside", "TerrainManager turns hits into collision",    ["rays"],                               "host/lua/PalCraft/Scripts/rays.lua",     true],
     ["pals",         "palworld",       "lists nearby Pals with position, box, HP",      "EntityBridge spawns hitbox entities",         ["entities"],                           "host/lua/PalCraft/Scripts/entities.lua", true],
     ["mc_damage",    "minecraft-java", "applies Minecraft hits to Pals",                "CombatBridge queues sword, arrow, TNT hits",  ["damage"],                             "host/lua/PalCraft/Scripts/combat.lua",   true],
     ["pal_damage",   "palworld",       "reports HP the character lost",                 "CombatBridge hurts Steve",                    ["hunter"],                             "host/lua/PalCraft/Scripts/combat.lua",   true],
@@ -16,6 +16,8 @@
     ["input_switch", "shared",         "F8 in Palworld asks Minecraft to take over",    "Overlay window glued over the Palworld one",  ["header", "state"],                    "host/native/src/palcraft.cpp",           true],
     ["starter_kit",  "minecraft-java", "-",                                             "gives kit.json once per world",               [],                                     "mc/src/main/java/dev/palcraft/bridge/StarterKit.java", true],
     ["time_weather", "minecraft-java", "-",                                             "/time and /weather",                          ["environment"],                        "-",                                      false],
-    ["host_action",  "palworld",       "answers unsupported",                           "G key",                                       ["header"],                             "host/lua/PalCraft/Scripts/life.lua",     true]
+    ["self_test",    "palworld",       "reports which parts came alive in a Melty test", "-",                                         ["state", "rays"],                      "host/lua/PalCraft/Scripts/selftest.lua", true],
+    ["host_action",  "palworld",       "answers unsupported",                           "G key",                                       ["header"],                             "host/lua/PalCraft/Scripts/life.lua",     true],
+    ["quiet_log",    "minecraft-java", "-",                                             "mutes the system-info library's warnings about Windows counters", [],                      "mc/src/main/java/dev/palcraft/bridge/QuietLog.java", true]
   ]
 }

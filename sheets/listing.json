@@ -1,8 +1,10 @@
 {
-  "_doc": "What the Melty page says and ships. One row = one fact. kind: text = wording, file = a path in this project that must exist, choice = a decision.",
+  "_doc": "What the Melty page says and ships. One row = one fact. kind: text = wording, file = a path in this project that must exist, choice = a decision, id = a name Melty gave the listing (the mod reads these).",
   "columns": ["id", "kind", "value"],
   "rows": [
     ["title",        "text",   "PalCraft"],
+    ["slug",         "id",     "palcraft-6"],
+    ["mod_id",       "id",     "bbee49ad-dee7-4100-8bdb-020e22bcc147"],
     ["tagline",      "text",   "Play Palworld as Steve: Minecraft movement, blocks and weapons on the Palpagos Islands."],
     ["version",      "text",   "0.1.0"],
     ["players",      "choice", "single player"],
@@ -11,10 +13,14 @@
     ["credit_1",     "text",   "Minecraft Ring by justbustin and siddoff (MIT): the bridge protocol and the Fabric mod this builds on"],
     ["credit_2",     "text",   "universal-modder by rehan-remade (MIT): the passthrough method and tooling"],
     ["credit_3",     "text",   "MinHook by Tsuda Kageyu (BSD 2-Clause)"],
-    ["credit_4",     "text",   "UE4SS by the UE4SS-RE team (MIT), Fabric (Apache 2.0), Prism Launcher (GPL-3.0, unmodified, fetched at install)"],
+    ["credit_4",     "text",   "UE4SS by the UE4SS-RE team (MIT), Fabric (Apache 2.0), Prism Launcher 11.1.1 (GPL-3.0, shipped unmodified)"],
     ["readme",       "file",   "README.md"],
     ["license_file", "file",   "LICENSE"],
     ["notices",      "file",   "THIRD_PARTY.md"],
-    ["recipe",       "file",   "melty.json"]
+    ["recipe",       "file",   "melty.json"],
+    ["test_check_1", "text",   "native-hooked"],
+    ["test_check_2", "text",   "minecraft-linked"],
+    ["test_check_3", "text",   "minecraft-drawn"],
+    ["test_check_4", "text",   "terrain-answered"]
   ]
 }

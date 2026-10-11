@@ -1,5 +1,5 @@
 {
-	"block.palcraft.terrain": "ER Terrain",
+	"block.palcraft.terrain": "Palworld Terrain",
 	"category.palcraft": "PalCraft",
 	"key.palcraft.camera_mode": "Switch camera mode (drive Palworld / follow Palworld)",
 	"key.palcraft.overlay": "Switch control to Palworld (F8 in Palworld switches back)",
@@ -11,6 +11,6 @@
 	"death.attack.palcraft.monster_hit.player": "%1$s was slain by a monster while fighting %2$s",
 	"death.attack.palcraft.status": "%1$s succumbed to a status ailment",
 	"death.attack.palcraft.status.player": "%1$s succumbed to a status ailment while fighting %2$s",
-	"death.attack.palcraft.host_death": "%1$s died in the Lands Between",
+	"death.attack.palcraft.host_death": "%1$s fell in Palworld",
 	"key.palcraft.action": "Palworld action (open, pick up, talk)"
 }

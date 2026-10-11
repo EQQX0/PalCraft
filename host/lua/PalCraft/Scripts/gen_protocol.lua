@@ -251,14 +251,20 @@ P.tune = {
     host_near_m = 0.1,
     ray_budget_ms = 4.0,
     ray_min_per_tick = 32,
+    solid_probe_up_m = 120,
     entity_radius_m = 64,
     entity_period_ticks = 2,
     mc_full_health = 20,
     pal_damage_scale = 1.0,
     link_timeout_ms = 2000,
     status_hit_fraction = 0.02,
+    status_enemy_radius_m = 25,
 }
 P.hook = {
     tick = "/Game/Pal/Blueprint/Controller/BP_PalPlayerController.BP_PalPlayerController_C:ReceiveTick",
+}
+P.listing = {
+    slug = "palcraft-6",
+    mod_id = "bbee49ad-dee7-4100-8bdb-020e22bcc147",
 }
 return P

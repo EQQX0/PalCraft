@@ -86,6 +86,11 @@ public final class CombatBridge {
 		}
 		float maxHp = EV[6];  // the Palworld character's max HP; 0 until the DLL reported a hit
 		ServerLevel level = server.overworld();
+		if (hits < lastHits || total < lastTotal) {  // Palworld started a new session and its counters began again
+			lastHits = hits;
+			lastTotal = total;
+			lastStatus = status;
+		}
 		if (hits != lastHits) {
 			float hostDamage = total - lastTotal;
 			lastHits = hits;

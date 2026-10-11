@@ -218,6 +218,11 @@ def generate(S):
         if r["side"] == "lua":
             L.append(f"    {r['id']} = \"{r['target']}\",")
     L.append("}")
+    L.append("P.listing = {")
+    for r in S["listing"]:
+        if r["kind"] == "id":
+            L.append(f"    {r['id']} = \"{r['value']}\",")
+    L.append("}")
     L.append("return P")
     out.append((ROOT / "host/lua/PalCraft/Scripts/gen_protocol.lua", "\n".join(L) + "\n"))
 

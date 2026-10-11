@@ -35,6 +35,8 @@ public final class DevCommands {
 
 	private static final Logger LOG = LoggerFactory.getLogger("palcraft");
 	private static final Path FILE = Path.of(dev.palcraft.bridge.link.BridgePaths.file("mc_cmd.txt"));
+	/** Players never have this file: the Palworld side's dev console looks for the same one. */
+	private static final boolean ENABLED = Files.exists(Path.of(dev.palcraft.bridge.link.BridgePaths.file("dev_enabled")));
 
 	/** "critattack": 0 idle, 1 jump next tick, 2 airborne: swing once falling (a Minecraft critical hit). */
 	private static int critStep;
@@ -92,6 +94,9 @@ public final class DevCommands {
 	}
 
 	public static void tick(Minecraft mc) {
+		if (!ENABLED) {
+			return;
+		}
 		tickCrit(mc);
 		if (!Files.exists(FILE)) {
 			return;

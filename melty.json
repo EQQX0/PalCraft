@@ -1,0 +1,101 @@
+{
+  "title": "PalCraft",
+  "version": "0.1.0",
+  "recipe": {
+    "schemaVersion": 1,
+    "mode": "installed",
+    "games": [
+      {
+        "slug": "palworld",
+        "role": "primary"
+      },
+      {
+        "slug": "minecraft-java",
+        "role": "companion"
+      }
+    ],
+    "components": [
+      {
+        "id": "main",
+        "fileName": "PalCraft-0.1.0.zip",
+        "label": "PalCraft for Palworld",
+        "kind": "main",
+        "required": true
+      },
+      {
+        "id": "minecraft",
+        "fileName": "PalCraft-Minecraft-0.1.0.zip",
+        "label": "Minecraft side: Prism Launcher with the PalCraft instance",
+        "kind": "extra",
+        "required": true
+      }
+    ],
+    "requirements": [
+      {
+        "kind": "loader",
+        "id": "ue4ss"
+      }
+    ],
+    "mappings": [
+      {
+        "component": "main",
+        "from": "",
+        "to": "{game}/Pal/Binaries/Win64/Mods/PalCraft"
+      },
+      {
+        "component": "minecraft",
+        "from": "",
+        "to": "{localappdata}/PalCraft"
+      }
+    ],
+    "launch": {
+      "kind": "game"
+    },
+    "setup": {
+      "label": "Minecraft",
+      "launch": {
+        "kind": "exe",
+        "path": "{localappdata}/PalCraft/Prism/prismlauncher.exe",
+        "args": [
+          "--launch",
+          "PalCraft"
+        ]
+      },
+      "done": {
+        "file": "{localappdata}/PalCraft/Prism/instances/PalCraft/.minecraft/logs/latest.log",
+        "contains": "Backend library:"
+      },
+      "stopWhenDone": true
+    },
+    "together": [
+      {
+        "launch": {
+          "kind": "exe",
+          "path": "{localappdata}/PalCraft/Prism/prismlauncher.exe",
+          "args": [
+            "--launch",
+            "PalCraft"
+          ]
+        },
+        "startFirst": false
+      }
+    ],
+    "runtimeData": [
+      "{localappdata}/PalCraft"
+    ],
+    "notes": {
+      "firstLaunch": "Load a single-player world in Palworld. Minecraft joins by itself; F8 swaps control between the two games."
+    },
+    "test": {
+      "checks": [
+        "native-hooked",
+        "minecraft-linked",
+        "minecraft-drawn",
+        "terrain-answered"
+      ],
+      "minutes": 10
+    }
+  },
+  "slug": "palcraft-6",
+  "modId": "bbee49ad-dee7-4100-8bdb-020e22bcc147"
+}

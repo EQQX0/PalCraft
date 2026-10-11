@@ -47,6 +47,11 @@ end
 
 -- The character's health is only a meter here: every loss is passed to Steve, then topped back up, so the
 -- hidden character does not die of wounds Steve already took.
+local function near(a, b, r)
+    local dx, dy, dz = a[1] - b[1], a[2] - b[2], a[3] - b[3]
+    return dx * dx + dy * dy + dz * dz <= r * r
+end
+
 local function watch_player(env)
     if not env.hasPawn or env.dead then
         lastHp = nil
@@ -58,11 +63,13 @@ local function watch_player(env)
     local carried = env.cflags & P.ctrl.MOVE_HUNTER ~= 0
     if lastHp and carried and hp < lastHp - 0.01 then
         local loss = lastHp - hp
+        local who = entities.nearest_hostile(env.feet)
         if loss < maxHp * P.tune.status_hit_fraction then
-            status = status + loss
+            -- Poison or burn from a fight reaches Steve. With nobody near, the hidden character is hungry or
+            -- cold, which the player cannot see: the top-up below is all it gets.
+            if who and near(who.pos, env.feet, P.tune.status_enemy_radius_m) then status = status + loss end
         else
             hits, total, lastDamage, lastHitTick = hits + 1, total + loss, loss, env.tick
-            local who = entities.nearest_hostile(env.feet)
             if who then lastFrom, lastKind = who.pos, who.kind else lastFrom, lastKind = env.feet, 0 end
         end
         cp:SetHP({ Value = math.floor(maxHp * 1000) })

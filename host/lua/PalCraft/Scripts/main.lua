@@ -28,7 +28,7 @@ local RUNTIME = runtime_dir()
 local DEV = exists(RUNTIME .. "dev_enabled")
 print("[PalCraft] loading, runtime " .. RUNTIME .. "\n")
 
-for _, name in ipairs({ "gen_protocol", "util", "shm", "camera", "standin", "life", "rays", "entities", "combat", "bridge", "dev" }) do
+for _, name in ipairs({ "gen_protocol", "util", "shm", "camera", "standin", "life", "rays", "entities", "combat", "selftest", "bridge", "dev" }) do
     package.loaded[name] = nil
 end
 local U = require("util")
@@ -49,5 +49,7 @@ U.log(ok and ("native " .. dll .. " loaded") or ("native " .. dll .. " FAILED to
 local started, why = pcall(function() require("bridge").start(RUNTIME, DEV) end)
 if not started then U.log("bridge failed to start: " .. tostring(why)) end
 
-local okDev, errDev = pcall(function() require("dev").start(RUNTIME) end)
-if not okDev then U.log("dev console failed: " .. tostring(errDev)) end
+if DEV then
+    local okDev, errDev = pcall(function() require("dev").start(RUNTIME) end)
+    if not okDev then U.log("dev console failed: " .. tostring(errDev)) end
+end

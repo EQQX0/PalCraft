@@ -1106,16 +1106,22 @@ static void on_present(IDXGISwapChain* sc, UINT flags) {
 
     static uint32_t lastTick = 0;
     static uint64_t lastTickMs = 0;
-    LuaView lua;
-    memset(&lua, 0, sizeof(lua));
-    bool got = seq_read(PC_OFF_LUASTATE, lua.raw, PC_SIZE_LUASTATE);
+    // The Lua mod writes through file IO, slowly enough that a read can land inside a write. Then the last
+    // complete copy stands: one missed read must not look like a loading screen to Minecraft.
+    static LuaView lua;
+    static bool haveLua = false;
+    uint8_t raw[PC_SIZE_LUASTATE];
+    if (seq_read(PC_OFF_LUASTATE, raw, PC_SIZE_LUASTATE)) {
+        memcpy(lua.raw, raw, sizeof(raw));
+        haveLua = true;
+    }
     uint32_t tick = lua.get<uint32_t>(PC_LUA_STATE_TICK_COUNT);
     uint64_t now = now_ms();
-    if (got && tick != lastTick) {
+    if (haveLua && tick != lastTick) {
         lastTick = tick;
         lastTickMs = now;
     }
-    lua.fresh = got && lastTickMs && now - lastTickMs < 500;
+    lua.fresh = haveLua && lastTickMs && now - lastTickMs < 500;
 
     adopt_depth(bbW, bbH);
     if (!g_failed) composite(lua, bbW, bbH);

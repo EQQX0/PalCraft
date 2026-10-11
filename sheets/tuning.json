@@ -12,11 +12,13 @@
     ["fog_end_m",            400,   "m",      "native", "haze is full"],
     ["ray_budget_ms",        4.0,   "ms",     "lua",    "time per tick spent answering terrain rays"],
     ["ray_min_per_tick",     32,    "rays",   "lua",    "rays answered even on a slow tick"],
+    ["solid_probe_up_m",     120,   "m",      "lua",    "how far above a downward ray's start to look for the surface of a hill it may be inside"],
     ["entity_radius_m",      64,    "m",      "lua",    "Pals farther than this from Steve are not sent to Minecraft"],
     ["entity_period_ticks",  2,     "ticks",  "lua",    "entity table refresh period"],
     ["mc_full_health",       20,    "points", "lua",    "Minecraft damage points that equal a full health bar"],
     ["pal_damage_scale",     1.0,   "x",      "lua",    "extra multiplier on Minecraft damage dealt to Pals"],
     ["link_timeout_ms",      2000,  "ms",     "lua",    "Minecraft is gone if its heartbeat stalls this long"],
-    ["status_hit_fraction",  0.02,  "0..1",   "lua",    "HP loss below this fraction of max counts as a status tick, not a hit"]
+    ["status_hit_fraction",  0.02,  "0..1",   "lua",    "HP loss below this fraction of max counts as a status tick, not a hit"],
+    ["status_enemy_radius_m", 25,   "m",      "lua",    "a status tick only reaches Steve with a hostile this close; otherwise it is the hidden character's hunger or cold"]
   ]
 }
