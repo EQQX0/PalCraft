@@ -15,8 +15,6 @@
     ["credit_3",     "text",   "MinHook by Tsuda Kageyu (BSD 2-Clause)"],
     ["credit_4",     "text",   "UE4SS by the UE4SS-RE team (MIT), Fabric (Apache 2.0), Prism Launcher 11.1.1 (GPL-3.0, shipped unmodified)"],
     ["credit_5",     "text",   "AppleSkin 3.0.6 by squeek502 (The Unlicense; its JEI mixin config is switched off): saturation on the hunger bar"],
-    ["addon_1",      "text",   "Upgrader items by execheinz, https://www.curseforge.com/minecraft/mc-mods/upgrader-items: optional, not in the package (All Rights Reserved)"],
-    ["addon_2",      "text",   "Studious Keybinds by StudiousGoose, https://www.curseforge.com/minecraft/mc-mods/studious-keybinds: optional, not in the package (no license stated)"],
     ["description",  "file",   "docs/listing.md"],
     ["readme",       "file",   "README.md"],
     ["license_file", "file",   "LICENSE"],

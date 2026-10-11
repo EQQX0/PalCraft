@@ -86,16 +86,30 @@ The first Play downloads Minecraft and takes a few minutes. After that:
 3. Play. Minecraft's window sits unseen on top of Palworld's and takes your keyboard and mouse, so you look at
    one picture: Palworld's, with Minecraft drawn into it.
 
-## Optional add-ons
+## Add your own mods
 
-PalCraft's Minecraft is 1.21.1 on Fabric, and these two mods start beside it. Their authors keep all rights to
-the files, so PalCraft does not carry them. Get the Fabric 1.21.1 file from each author's CurseForge page and
-drop it into `%LOCALAPPDATA%\PalCraft\Prism\instances\PalCraft\.minecraft\mods`.
+PalCraft's Minecraft is Java Edition 1.21.1 on Fabric. It lives in its own folder, apart from your other
+Minecraft installs.
 
-- [Upgrader items](https://www.curseforge.com/minecraft/mc-mods/upgrader-items) by execheinz. Craft the
-  Upgrader, put an item in, pick the item you want and spin the wheel.
-- [Studious Keybinds](https://www.curseforge.com/minecraft/mc-mods/studious-keybinds) by StudiousGoose. The
-  controls screen shows your keyboard with each binding on its key.
+1. Close Palworld and Minecraft.
+2. Download the mod's **Fabric** file for Minecraft **1.21.1** from CurseForge or Modrinth.
+3. Press Win+R, paste `%LOCALAPPDATA%\PalCraft\Prism\instances\PalCraft\.minecraft\mods` and press Enter.
+4. Drop the `.jar` file into that folder.
+5. Press Play.
+
+Fabric API is in the folder already. Forge and NeoForge files do not load, and neither do files for other
+Minecraft versions. Mods that add items or change the HUD and inventory fit best. A mod that replaces
+Minecraft's renderer can break the picture inside Palworld. If the game stops starting, take your last jar out.
+If a mod is gone after a PalCraft update, drop it in again.
+
+## Change your skin
+
+PalCraft signs Minecraft in with your own account, so Steve wears your account's skin.
+
+1. Sign in at minecraft.net, open your profile and choose Change skin. The official Minecraft Launcher has the
+   same setting under Skins.
+2. Pick or upload a skin and save.
+3. Press Play, then press F5 in the game to see it.
 
 ## Keys
 
