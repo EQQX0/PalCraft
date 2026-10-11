@@ -44,3 +44,4 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
 - Night at the start area is temperature -1 with cold resist 0: Steve freezes slowly unless he holds a torch,
   stands by a fire or wears leather.
 - This PC's installed world had Steve in creative (playerGameType 1); set back to survival during the test.
+- 2026-10-12 0.2.0 published on the creator's word ("Publish"); Melty confirmed it live at 2026-10-11 21:56 UTC. Two screenshots added (third person, survival HUD), tagline updated. The two extra mods wait for the authors' permission; planned for 0.2.1.
