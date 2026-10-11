@@ -45,3 +45,4 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
   stands by a fire or wears leather.
 - This PC's installed world had Steve in creative (playerGameType 1); set back to survival during the test.
 - 2026-10-12 0.2.0 published on the creator's word ("Publish"); Melty confirmed it live at 2026-10-11 21:56 UTC. Two screenshots added (third person, survival HUD), tagline updated. The two extra mods wait for the authors' permission; planned for 0.2.1.
+- 2026-10-12 Creator asked again to put the two mods in with credit and CurseForge links. Not bundled (no permission from the authors; credit does not replace it). Listing description rewritten for 0.2.0 with an Optional add-ons section naming both authors and linking their CurseForge pages; same section in README for 0.2.1. Both mods start beside PalCraft in the dev client (title screen only).

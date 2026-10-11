@@ -86,6 +86,17 @@ The first Play downloads Minecraft and takes a few minutes. After that:
 3. Play. Minecraft's window sits unseen on top of Palworld's and takes your keyboard and mouse, so you look at
    one picture: Palworld's, with Minecraft drawn into it.
 
+## Optional add-ons
+
+PalCraft's Minecraft is 1.21.1 on Fabric, and these two mods start beside it. Their authors keep all rights to
+the files, so PalCraft does not carry them. Get the Fabric 1.21.1 file from each author's CurseForge page and
+drop it into `%LOCALAPPDATA%\PalCraft\Prism\instances\PalCraft\.minecraft\mods`.
+
+- [Upgrader items](https://www.curseforge.com/minecraft/mc-mods/upgrader-items) by execheinz. Craft the
+  Upgrader, put an item in, pick the item you want and spin the wheel.
+- [Studious Keybinds](https://www.curseforge.com/minecraft/mc-mods/studious-keybinds) by StudiousGoose. The
+  controls screen shows your keyboard with each binding on its key.
+
 ## Keys
 
 | Key | When | Does |
