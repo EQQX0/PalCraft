@@ -1166,6 +1166,22 @@ static HRESULT STDMETHODCALLTYPE hkResize(IDXGISwapChain* sc, UINT n, UINT w, UI
 }
 
 // ---------------------------------------------------------------------------------------------------
+// Pointer
+//
+// Minecraft's window is owned by Palworld's, so Windows gives the two one shared pointer. Palworld is not the
+// active program while Steve plays, and an inactive Unreal game sets its arrow every frame: the arrow then sits
+// on Minecraft's crosshair. While Minecraft's window is in front, Palworld's pointer changes are dropped.
+
+typedef HCURSOR(WINAPI* SetCursor_t)(HCURSOR);
+static SetCursor_t oSetCursor = nullptr;
+
+static HCURSOR WINAPI hkSetCursor(HCURSOR cursor) {
+    HWND front = GetForegroundWindow();
+    if (g_hwnd && front && front != g_hwnd && GetWindow(front, GW_OWNER) == g_hwnd) return GetCursor();
+    return oSetCursor(cursor);
+}
+
+// ---------------------------------------------------------------------------------------------------
 // Start-up
 
 static bool hook(void* target, void* detour, void** original, const char* name) {
@@ -1217,6 +1233,11 @@ static bool install_hooks() {
     ok = ok && hook(cv[PC_SLOT_CLEAR_DEPTH], (void*)hkClearDepth, (void**)&oClearDepth, "ClearDepthStencilView");
     ok = ok && hook(cv[PC_SLOT_DRAW_INDEXED], (void*)hkDrawII, (void**)&oDrawII, "DrawIndexedInstanced");
     ok = ok && hook(cv[PC_SLOT_VIEWPORTS], (void*)hkViewports, (void**)&oViewports, "RSSetViewports");
+    if (ok) {  // the pointer fix is a comfort: the mod runs without it
+        HMODULE user32 = GetModuleHandleA("user32.dll");
+        void* setCursor = user32 ? (void*)GetProcAddress(user32, "SetCursor") : nullptr;
+        if (setCursor) hook(setCursor, (void*)hkSetCursor, (void**)&oSetCursor, "SetCursor");
+    }
     rel(sc1);
     ctx->Release();
     dev->Release();

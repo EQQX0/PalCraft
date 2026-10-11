@@ -9,6 +9,7 @@
     ["set_targets",  "native", "vtable hook",    "ID3D11DeviceContext::OMSetRenderTargets",    33, "scene_depth", "remembers the depth buffer in use"],
     ["clear_depth",  "native", "vtable hook",    "ID3D11DeviceContext::ClearDepthStencilView", 53, "scene_depth", "marks depth buffers that started fresh this frame"],
     ["draw_indexed", "native", "vtable hook",    "ID3D11DeviceContext::DrawIndexedInstanced",  20, "scene_depth", "counts draws per depth buffer; the busiest full-screen one is the scene"],
-    ["viewports",    "native", "vtable hook",    "ID3D11DeviceContext::RSSetViewports",        44, "frame_tag",   "sees the frame tag and the view rectangle of the scene"]
+    ["viewports",    "native", "vtable hook",    "ID3D11DeviceContext::RSSetViewports",        44, "frame_tag",   "sees the frame tag and the view rectangle of the scene"],
+    ["set_cursor", "native", "inline hook", "user32!SetCursor", "-", "cursor", "turns Palworld's pointer changes into 'no pointer' while Minecraft holds the mouse"]
   ]
 }

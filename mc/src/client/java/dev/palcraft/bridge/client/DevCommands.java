@@ -26,6 +26,7 @@ import java.util.List;
  *   cam first|third|front      look &lt;yaw&gt; &lt;pitch&gt;      run &lt;minecraft command&gt;
  *   use | attack               screenshot &lt;name&gt;         status
  *   critattack (jump, turn to the nearest Palworld enemy, swing while falling)
+ *   hold forward|back|left|right|jump|sneak|sprint|attack|use &lt;ticks&gt;   (walks without real key presses or focus)
  *   save | quit
  * </pre>
  */
@@ -93,11 +94,24 @@ public final class DevCommands {
 		mc.player.xRotO = pitch;
 	}
 
+	/** "hold": keys kept down for a number of ticks, so tests can walk while another window has focus. */
+	private static final java.util.Map<KeyMapping, Integer> HELD = new java.util.HashMap<>();
+
+	private static void tickHeld() {
+		HELD.entrySet().removeIf(e -> {
+			int left = e.getValue() - 1;
+			e.getKey().setDown(left > 0);
+			e.setValue(left);
+			return left <= 0;
+		});
+	}
+
 	public static void tick(Minecraft mc) {
 		if (!ENABLED) {
 			return;
 		}
 		tickCrit(mc);
+		tickHeld();
 		if (!Files.exists(FILE)) {
 			return;
 		}
@@ -145,6 +159,22 @@ public final class DevCommands {
 				if (mc.player != null) {
 					mc.player.connection.sendCommand(arg.startsWith("/") ? arg.substring(1) : arg);
 				}
+			}
+			case "hold" -> {
+				String[] v = arg.split("\s+");
+				KeyMapping key = switch (v[0]) {
+					case "forward" -> mc.options.keyUp;
+					case "back" -> mc.options.keyDown;
+					case "left" -> mc.options.keyLeft;
+					case "right" -> mc.options.keyRight;
+					case "jump" -> mc.options.keyJump;
+					case "sneak" -> mc.options.keyShift;
+					case "attack" -> mc.options.keyAttack;
+					case "use" -> mc.options.keyUse;
+					default -> mc.options.keySprint;
+				};
+				key.setDown(true);
+				HELD.put(key, Integer.parseInt(v[1]));
 			}
 			case "use" -> KeyMapping.click(mc.options.keyUse.getDefaultKey());
 			case "attack" -> KeyMapping.click(mc.options.keyAttack.getDefaultKey());

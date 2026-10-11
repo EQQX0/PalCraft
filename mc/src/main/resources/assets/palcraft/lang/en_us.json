@@ -12,5 +12,8 @@
 	"death.attack.palcraft.status": "%1$s succumbed to a status ailment",
 	"death.attack.palcraft.status.player": "%1$s succumbed to a status ailment while fighting %2$s",
 	"death.attack.palcraft.host_death": "%1$s fell in Palworld",
-	"key.palcraft.action": "Palworld action (open, pick up, talk)"
+	"key.palcraft.action": "Palworld action (open, pick up, talk)",
+	"palcraft.gather.spent": "This spot is dug out. Dig beside it.",
+	"palcraft.gather.needs_pickaxe": "Stone needs a pickaxe.",
+	"palcraft.gather.nothing": "Nothing here for that tool."
 }

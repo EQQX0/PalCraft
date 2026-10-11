@@ -14,6 +14,12 @@
     [9,  "minecraft:arrow",           64, "for the bow"],
     [10, "minecraft:torch",           32, "light"],
     [11, "minecraft:ladder",          16, "climbing"],
-    [12, "minecraft:oak_door",        2,  "building"]
+    [12, "minecraft:oak_door",        2,  "building"],
+    [13, "minecraft:water_bucket", 1, "farming: two buckets make an endless spring"],
+    [14, "minecraft:water_bucket", 1, "farming"],
+    [15, "minecraft:wheat_seeds", 8, "first crop"],
+    [16, "minecraft:oak_sapling", 4, "grow your own wood"],
+    [17, "minecraft:crafting_table", 1, "crafting"],
+    [18, "minecraft:golden_apple", 2, "for the first hard fight"]
   ]
 }

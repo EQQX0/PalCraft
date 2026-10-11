@@ -8,6 +8,7 @@ dist/PalCraft-Minecraft-<v>.zip  -> {localappdata}/PalCraft                    (
 Nothing from Palworld or Minecraft goes in: Prism downloads Minecraft on the player's PC.
 """
 import hashlib
+import io
 import json
 import subprocess
 import sys
@@ -19,6 +20,7 @@ DL = ROOT / ".tools" / "dl"
 DIST = ROOT / "dist"
 NAME = "PalCraft"
 PRISM_ZIP = DL / "PrismLauncher-Portable-11.1.1.zip"
+APPLESKIN = DL / "appleskin-fabric-mc1.21-3.0.6.jar"  # saturation on the hunger bar
 STAMP = (2026, 10, 11, 0, 0, 0)
 
 # Dev-only files that must never reach a player.
@@ -51,6 +53,24 @@ def notices(z, prefix=""):
     add(z, prefix + "README.md", (ROOT / "README.md").read_bytes())
 
 
+def appleskin():
+    """AppleSkin as squeek502 ships it, less one line of its fabric.mod.json: the mixin config for JEI, a mod
+    PalCraft does not carry. Without JEI that config logs a failed class load at every start."""
+    buf = io.BytesIO()
+    with zipfile.ZipFile(APPLESKIN) as src, zipfile.ZipFile(buf, "w") as out:
+        for e in src.infolist():
+            data = src.read(e)
+            if e.filename == "fabric.mod.json":
+                meta = json.loads(data)
+                meta["mixins"] = [m for m in meta["mixins"] if "jei" not in (m if isinstance(m, str) else m["config"])]
+                data = json.dumps(meta, indent=2).encode("utf-8")
+            info = zipfile.ZipInfo(e.filename, STAMP)
+            info.compress_type = e.compress_type
+            info.external_attr = e.external_attr
+            out.writestr(info, data)
+    return buf.getvalue()
+
+
 def build_host(out):
     mod = ROOT / "host" / "lua" / NAME
     dll = mod / "palcraft.dll"
@@ -69,7 +89,7 @@ def build_host(out):
 def build_minecraft(out, g, version):
     jar = ROOT / "mc" / "build" / "libs" / f"palcraft-{version}.jar"
     api = DL / f"fabric-api-{g['fabric_api_version']}.jar"
-    for need in (jar, api, PRISM_ZIP):
+    for need in (jar, api, APPLESKIN, PRISM_ZIP):
         if not need.exists():
             sys.exit(f"missing {need}")
     inst = f"Prism/instances/{NAME}/"
@@ -91,7 +111,7 @@ def build_minecraft(out, g, version):
     # Minecraft fills in every option this leaves out.
     options = "\n".join([
         "pauseOnLostFocus:false", "fullscreen:false", "tutorialStep:none", "onboardAccessibility:false",
-        "narrator:0", "skipMultiplayerWarning:true", "",
+        "narrator:0", "skipMultiplayerWarning:true", "graphicsMode:1", "mipmapLevels:4", "ao:true", "entityShadows:true", "",
     ])
     with zipfile.ZipFile(out, "w") as z:
         # Prism Launcher's official portable build, byte for byte.
@@ -104,6 +124,7 @@ def build_minecraft(out, g, version):
         add(z, inst + ".minecraft/options.txt", options)
         add(z, inst + f".minecraft/mods/{jar.name}", jar.read_bytes())
         add(z, inst + f".minecraft/mods/{api.name}", api.read_bytes())
+        add(z, inst + f".minecraft/mods/{APPLESKIN.name}", appleskin())
         add(z, "PrismLauncher-COPYING.md", (DL / "PrismLauncher-COPYING.md").read_bytes())
         notices(z)
 

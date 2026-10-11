@@ -1,6 +1,6 @@
 {
   "title": "PalCraft",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "recipe": {
     "schemaVersion": 1,
     "mode": "installed",
@@ -17,14 +17,14 @@
     "components": [
       {
         "id": "main",
-        "fileName": "PalCraft-0.1.0.zip",
+        "fileName": "PalCraft-0.2.0.zip",
         "label": "PalCraft for Palworld",
         "kind": "main",
         "required": true
       },
       {
         "id": "minecraft",
-        "fileName": "PalCraft-Minecraft-0.1.0.zip",
+        "fileName": "PalCraft-Minecraft-0.2.0.zip",
         "label": "Minecraft side: Prism Launcher with the PalCraft instance",
         "kind": "extra",
         "required": true

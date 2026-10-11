@@ -26,6 +26,12 @@ its own license files. Source: <https://github.com/PrismLauncher/PrismLauncher/t
 
 **Fabric API 0.116.17+1.21.1**, Apache 2.0. Unmodified jar from <https://github.com/FabricMC/fabric>.
 
+**AppleSkin 3.0.6** by squeek502. The Unlicense (public domain). The jar from
+<https://modrinth.com/mod/appleskin> with one change: PalCraft's build script drops the JEI mixin config from
+its `fabric.mod.json`, because that config logs a failed class load at every start without JEI. It draws
+saturation on the hunger bar. Source:
+<https://github.com/squeek502/AppleSkin>.
+
 Prism Launcher downloads Minecraft 1.21.1, Fabric Loader 0.19.5 and Java 21 to your PC from their official
 servers, signed in with your own Minecraft account.
 

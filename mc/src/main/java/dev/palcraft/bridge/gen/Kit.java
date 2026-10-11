@@ -20,5 +20,11 @@ public final class Kit {
 		{10, "minecraft:torch", 32},
 		{11, "minecraft:ladder", 16},
 		{12, "minecraft:oak_door", 2},
+		{13, "minecraft:water_bucket", 1},
+		{14, "minecraft:water_bucket", 1},
+		{15, "minecraft:wheat_seeds", 8},
+		{16, "minecraft:oak_sapling", 4},
+		{17, "minecraft:crafting_table", 1},
+		{18, "minecraft:golden_apple", 2},
 	};
 }

@@ -121,6 +121,32 @@ public final class Protocol {
 	public static final int HE_LAST_KIND = 0x28;
 	public static final int HE_TOTAL_STATUS_DAMAGE = 0x2C;
 
+	// Surface probe (Probe), relative to OFF_PROBE: one ray, answered with the kind of Palworld surface it hits.
+	public static final int OFF_PROBE = 0x000D00;
+	public static final int PR_REQ_SEQ = 0x00;
+	public static final int PR_RESP_SEQ = 0x04;
+	public static final int PR_START = 0x08;
+	public static final int PR_END = 0x14;
+	public static final int PR_KIND = 0x20;
+	public static final int SURFACE_NONE = 0;
+	public static final int SURFACE_SOIL = 1;
+	public static final int SURFACE_GRASS = 2;
+	public static final int SURFACE_STONE = 3;
+	public static final int SURFACE_WOOD = 4;
+	public static final int SURFACE_SAND = 5;
+	public static final int SURFACE_SNOW = 6;
+	public static final int SURFACE_ORE = 7;
+
+	// Body needs (Body), relative to OFF_BODY.
+	public static final int OFF_BODY = 0x000D40;
+	public static final int B_FOOD = 0x00;
+	public static final int B_WARMTH = 0x04;
+	public static final int B_TEMPERATURE = 0x10;
+	public static final int B_RESIST_HEAT = 0x14;
+	public static final int B_RESIST_COLD = 0x18;
+	public static final int B_STOMACH = 0x1C;
+	public static final int B_VALID = 0x20;
+
 	// Ray queries (ErmcRayHeader), relative to OFF_RAYS
 	public static final int OFF_RAYS = 0x100000;
 	public static final int MAX_RAYS = 8192;

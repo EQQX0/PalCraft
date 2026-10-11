@@ -198,6 +198,44 @@ public final class BridgeShm {
 	// -- ray queries -------------------------------------------------------------------------
 
 	/** True when the host game has answered the last batch (or none was ever sent). */
+	/** Asks what one ray (start.xyz, end.xyz in host metres) hits. Returns the sequence to wait for, or -1 while one is open. */
+	public int submitProbe(float[] ray) {
+		int base = Protocol.OFF_PROBE;
+		int seq = (int) INT.getAcquire(buf, base + Protocol.PR_REQ_SEQ);
+		if (seq != (int) INT.getAcquire(buf, base + Protocol.PR_RESP_SEQ)) return -1;
+		for (int i = 0; i < 6; i++) {
+			buf.putFloat(base + Protocol.PR_START + i * 4, ray[i]);
+		}
+		INT.setRelease(buf, base + Protocol.PR_REQ_SEQ, seq + 1);
+		return seq + 1;
+	}
+
+	/** The surface kind for that request, or -1 while Palworld has not answered. */
+	public int probeKind(int seq) {
+		int base = Protocol.OFF_PROBE;
+		return (int) INT.getAcquire(buf, base + Protocol.PR_RESP_SEQ) == seq ? buf.getInt(base + Protocol.PR_KIND) : -1;
+	}
+
+	/** Gives up on an unanswered request so the next one can go out. */
+	public void abandonProbe() {
+		int base = Protocol.OFF_PROBE;
+		INT.setRelease(buf, base + Protocol.PR_RESP_SEQ, (int) INT.getAcquire(buf, base + Protocol.PR_REQ_SEQ));
+	}
+
+	public void writeBody(float food, int warmth) {
+		buf.putFloat(Protocol.OFF_BODY + Protocol.B_FOOD, food);
+		buf.putInt(Protocol.OFF_BODY + Protocol.B_WARMTH, warmth);
+	}
+
+	/** out: temperature, heat resist, cold resist. False while Palworld has not reported them. */
+	public boolean readBody(int[] out) {
+		int base = Protocol.OFF_BODY;
+		out[0] = buf.getInt(base + Protocol.B_TEMPERATURE);
+		out[1] = buf.getInt(base + Protocol.B_RESIST_HEAT);
+		out[2] = buf.getInt(base + Protocol.B_RESIST_COLD);
+		return buf.getInt(base + Protocol.B_VALID) == 1;
+	}
+
 	public boolean raysIdle() {
 		int base = Protocol.OFF_RAYS;
 		return (int) INT.getAcquire(buf, base + Protocol.R_REQ_SEQ) == (int) INT.getAcquire(buf, base + Protocol.R_RESP_SEQ);

@@ -42,11 +42,9 @@ local function buried(pawn, x, y, z)
     return line(pawn, x, y, z, x, roofY - 0.02, z) == nil
 end
 
--- hollow: Steve is inside a hill himself (creative flight outruns the sampling). Hills then read as open,
--- so he can leave the way he came instead of being walled in.
-local function trace(pawn, hollow, sx, sy, sz, ex, ey, ez)
+local function trace(pawn, sx, sy, sz, ex, ey, ez)
     local dx, dy, dz = ex - sx, ey - sy, ez - sz
-    if not hollow and dy < 0 and dy * dy > 9 * (dx * dx + dz * dz) and buried(pawn, sx, sy, sz) then
+    if dy < 0 and dy * dy > 9 * (dx * dx + dz * dz) and buried(pawn, sx, sy, sz) then
         return string.pack("<ffffffI4I4", sx, sy, sz, 0, 1, 0, 1, 0)   -- solid right here
     end
     for _ = 1, 3 do
@@ -81,13 +79,12 @@ function M.tick(env)
     if not job or job.seq ~= req then
         count = math.min(count, P.const.MAX_RAYS)
         job = { seq = req, count = count, data = count > 0 and shm.read(OFF + P.const.RAYS_OFF_RAYS, count * RAY) or "", i = 0, out = {} }
-        job.hollow = env.feet ~= nil and buried(env.pawn, env.feet[1], env.feet[2] + 1, env.feet[3])
     end
     local t0, budget, least = os.clock(), P.tune.ray_budget_ms / 1000, P.tune.ray_min_per_tick
     local pawn, data, out, done = env.pawn, job.data, job.out, 0
     while job.i < job.count do
         local sx, sy, sz, ex, ey, ez = string.unpack("<ffffff", data, job.i * RAY + 1)
-        out[#out + 1] = trace(pawn, job.hollow, sx, sy, sz, ex, ey, ez)
+        out[#out + 1] = trace(pawn, sx, sy, sz, ex, ey, ez)
         job.i = job.i + 1
         done = done + 1
         if done >= least and done % 8 == 0 and os.clock() - t0 > budget then break end

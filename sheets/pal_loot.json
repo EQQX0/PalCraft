@@ -1,0 +1,28 @@
+{
+  "_doc": "What a Pal drops in Minecraft when Steve kills it. One row = one roll. match = part of Palworld's character id in lower case, * = every Pal, !boss = an alpha or tower boss (the big Pals with a boss health bar). Every matching row rolls on its own.",
+  "columns": ["match", "item", "min", "max", "chance", "why"],
+  "rows": [
+    ["*", "minecraft:beef", 1, 2, 0.6, "every Pal: meat"],
+    ["*", "minecraft:bone", 1, 2, 0.5, "every Pal: bone meal for farms"],
+    ["*", "minecraft:leather", 1, 1, 0.35, "every Pal: armor, books"],
+    ["sheep", "minecraft:white_wool", 1, 2, 1.0, "Lamball: beds"],
+    ["sheep", "minecraft:mutton", 1, 2, 1.0, "Lamball"],
+    ["chicken", "minecraft:feather", 1, 3, 1.0, "Chikipi: arrows"],
+    ["chicken", "minecraft:chicken", 1, 1, 1.0, "Chikipi"],
+    ["chicken", "minecraft:egg", 1, 1, 0.3, "Chikipi"],
+    ["boar", "minecraft:porkchop", 1, 3, 1.0, "Rushoar"],
+    ["pinkcat", "minecraft:string", 1, 2, 0.6, "Cattiva: bows, fishing rods"],
+    ["kitsune", "minecraft:gunpowder", 1, 2, 0.4, "Foxparks: TNT"],
+    ["penguin", "minecraft:cod", 1, 2, 1.0, "Pengullet"],
+    ["platypus", "minecraft:cod", 1, 2, 1.0, "Fuack"],
+    ["dreamdemon", "minecraft:phantom_membrane", 1, 1, 0.4, "Daedream"],
+    ["dreamdemon", "minecraft:ender_pearl", 1, 1, 0.1, "Daedream"],
+    ["hunter", "minecraft:emerald", 1, 2, 0.5, "syndicate thugs"],
+    ["hunter", "minecraft:arrow", 2, 6, 0.7, "syndicate thugs"],
+    ["hunter", "minecraft:gold_ingot", 1, 2, 0.4, "syndicate thugs carry gold: golden apples"],
+    ["*", "minecraft:golden_apple", 1, 1, 0.03, "rare on any Pal"],
+    ["!boss", "minecraft:enchanted_golden_apple", 1, 1, 1.0, "the prize for an alpha: Minecraft has no recipe for it"],
+    ["!boss", "minecraft:golden_apple", 1, 2, 1.0, "alpha"],
+    ["!boss", "minecraft:diamond", 2, 4, 1.0, "alpha: diamond armor"]
+  ]
+}

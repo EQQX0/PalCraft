@@ -110,6 +110,30 @@ public final class ErLink {
 		return shm.submitRays(rays, count, flags, filter);
 	}
 
+	public synchronized int submitProbe(float[] ray) {
+		return shm == null || !alive() ? -1 : shm.submitProbe(ray);
+	}
+
+	public synchronized int probeKind(int seq) {
+		return shm == null ? -1 : shm.probeKind(seq);
+	}
+
+	public synchronized void abandonProbe() {
+		if (shm != null) {
+			shm.abandonProbe();
+		}
+	}
+
+	public synchronized void writeBody(float food, int warmth) {
+		if (shm != null) {
+			shm.writeBody(food, warmth);
+		}
+	}
+
+	public synchronized boolean readBody(int[] out) {
+		return shm != null && alive() && shm.readBody(out);
+	}
+
 	public synchronized boolean raysDone(int seq) {
 		return shm != null && shm.raysDone(seq);
 	}

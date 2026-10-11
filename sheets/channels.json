@@ -8,6 +8,8 @@
     ["hunter",      "bridge.shm", "0x000A00", "0x30",     "HunterEvents",  "lua",    ["mc"],                  "seqlock",       "Hits the hidden Palworld character took while standing in for Steve"],
     ["environment", "bridge.shm", "0x000B00", "0x18",     "Environment",   "mc",     ["lua"],                 "seqlock",       "Minecraft /time and /weather pushed to Palworld (not used in 0.1)"],
     ["luastate",    "bridge.shm", "0x000C00", "0xF0",     "LuaState",      "lua",    ["native"],              "seqlock",       "Game-thread facts the Lua mod knows; native folds them into state"],
+    ["probe", "bridge.shm", "0x000D00", "0x40", "Probe", "shared", ["mc", "lua"], "request-reply", "Minecraft asks what kind of Palworld surface one ray hits"],
+    ["body", "bridge.shm", "0x000D40", "0x40", "Body", "shared", ["mc", "lua"], "atomic-fields", "Steve's food and nearby fire go to Palworld; Palworld's body temperature comes back"],
     ["rays",        "bridge.shm", "0x100000", "0x70020",  "RayHeader",     "shared", ["mc", "lua"],           "req-resp",      "Terrain ray batches: Minecraft asks, Palworld line-traces"],
     ["entities",    "bridge.shm", "0x200000", "0x8010",   "EntityTable",   "lua",    ["mc"],                  "seqlock",       "Pals and humans near Steve, as hitboxes for Minecraft"],
     ["damage",      "bridge.shm", "0x280000", "0x2010",   "DamageQueue",   "shared", ["mc", "lua"],           "ring",          "Minecraft hits to apply to Pals"],

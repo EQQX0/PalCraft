@@ -19,6 +19,16 @@
     ["pal_damage_scale",     1.0,   "x",      "lua",    "extra multiplier on Minecraft damage dealt to Pals"],
     ["link_timeout_ms",      2000,  "ms",     "lua",    "Minecraft is gone if its heartbeat stalls this long"],
     ["status_hit_fraction",  0.02,  "0..1",   "lua",    "HP loss below this fraction of max counts as a status tick, not a hit"],
-    ["status_enemy_radius_m", 25,   "m",      "lua",    "a status tick only reaches Steve with a hostile this close; otherwise it is the hidden character's hunger or cold"]
+    ["status_enemy_radius_m", 25,   "m",      "lua",    "a status tick only reaches Steve with a hostile this close; otherwise it is the hidden character's hunger or cold"],
+    ["frame_pixel_budget", 4.2, "MP", "mc", "largest layer Minecraft sends, in megapixels (2560x1440 fits)"],
+    ["frame_min_fps", 70, "fps", "mc", "below this for two seconds, Minecraft sends the next smaller layer size"],
+    ["dig_ticks_hand", 40, "ticks", "mc", "time for one dig with no fitting tool"],
+    ["dig_respawn_s", 90, "s", "mc", "a dug spot yields again after this long"],
+    ["hit_enemy_radius_m", 40, "m", "lua", "a hit only reaches Steve with a hostile this close; otherwise the hidden character starves, freezes or fell, which is Palworld's survival and not Steve's"],
+    ["warmth_radius", 5, "blocks", "mc", "how far a fire or a block of ice reaches"],
+    ["body_period_ms", 1000, "ms", "lua", "how often Palworld takes Steve's food and reports temperature"],
+    ["heat_settle_ms", 4000, "ms", "lua", "after changing its heat source, the mod waits this long for Palworld's temperature to follow"],
+    ["pal_box_min_radius_m", 0.45, "m", "lua", "narrowest hitbox half-width a Pal gets in Minecraft"],
+    ["pal_box_min_half_m", 0.5, "m", "lua", "lowest hitbox half-height a Pal gets in Minecraft"]
   ]
 }

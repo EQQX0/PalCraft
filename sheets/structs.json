@@ -153,6 +153,18 @@
     ["FrameHeader", "mcNear",  "0x20", "f32", 1, "mc", "-", "Minecraft near, blocks"],
     ["FrameHeader", "mcFar",   "0x24", "f32", 1, "mc", "-", "Minecraft far, blocks"],
     ["FrameHeader", "fovYDeg", "0x28", "f32", 1, "mc", "-", "vertical FOV of the pixels"],
-    ["FrameHeader", "aspect",  "0x2C", "f32", 1, "mc", "-", "aspect of the pixels"]
+    ["FrameHeader", "aspect",  "0x2C", "f32", 1, "mc", "-", "aspect of the pixels"],
+    ["Probe", "reqSeq", "0x00", "u32", 1, "mc", "PR_REQ_SEQ", "bumped after start/end are written"],
+    ["Probe", "respSeq", "0x04", "u32", 1, "lua", "PR_RESP_SEQ", "= reqSeq once kind is in"],
+    ["Probe", "start", "0x08", "f32", 3, "mc", "PR_START", "ray start, host metres"],
+    ["Probe", "end", "0x14", "f32", 3, "mc", "PR_END", "ray end, host metres"],
+    ["Probe", "kind", "0x20", "u32", 1, "lua", "PR_KIND", "a surface value from flags.json"],
+    ["Body", "food", "0x00", "f32", 1, "mc", "B_FOOD", "Steve's food level, 0..20"],
+    ["Body", "warmth", "0x04", "i32", 1, "mc", "B_WARMTH", "heat from Minecraft blocks near Steve: +2 fire, +1 torch, -1 water or ice"],
+    ["Body", "temperature", "0x10", "i32", 1, "lua", "B_TEMPERATURE", "Palworld's body temperature level, 0 = mild"],
+    ["Body", "resistHeat", "0x14", "i32", 1, "lua", "B_RESIST_HEAT", "levels of heat the character's clothes take"],
+    ["Body", "resistCold", "0x18", "i32", 1, "lua", "B_RESIST_COLD", "levels of cold the character's clothes take"],
+    ["Body", "stomach", "0x1C", "f32", 1, "lua", "B_STOMACH", "Palworld's stomach, 0..1"],
+    ["Body", "valid", "0x20", "u32", 1, "lua", "B_VALID", "1 while the fields above are real"]
   ]
 }

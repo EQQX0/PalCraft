@@ -100,6 +100,7 @@ public final class EntityBridge {
 				return false;
 			}
 			ErEntity proxy = en.getValue();
+			PalLoot.gone(level, proxy, DIED.contains(en.getLongKey()));
 			if (DIED.contains(en.getLongKey())) {
 				LOG.info("Palworld {} died: {}", kindName(proxy.kind()), proxy.getName().getString());
 			}
@@ -247,6 +248,8 @@ public final class EntityBridge {
 		int flags = critical ? Protocol.DAMAGE_CRITICAL : 0;
 		if (!(attacker instanceof Player)) {
 			flags |= Protocol.DAMAGE_NOT_BY_PLAYER;
+		} else {
+			PalLoot.hitByPlayer(proxy.hostId(), proxy.level().getGameTime());
 		}
 		String kind;
 		if (source.is(DamageTypeTags.IS_EXPLOSION)) {

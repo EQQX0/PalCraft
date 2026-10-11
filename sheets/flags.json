@@ -61,6 +61,14 @@
     ["const", "FRAMES_OFF_SLOTS",     "0x1000",     "mc",  "-",            "first slot"],
     ["const", "TAG_COUNT",            "16",         "lua", "-",            "frame tags in rotation"],
     ["const", "TAG_BASE_W",           "37",         "lua", "-",            "frame tag i is a render target (37+i) x 7"],
-    ["const", "TAG_H",                "7",          "lua", "-",            "height of every frame tag target"]
+    ["const", "TAG_H",                "7",          "lua", "-",            "height of every frame tag target"],
+    ["surface", "NONE", "0", "lua", "SURFACE_NONE", "the ray hit nothing"],
+    ["surface", "SOIL", "1", "lua", "SURFACE_SOIL", "bare ground"],
+    ["surface", "GRASS", "2", "lua", "SURFACE_GRASS", "grassy ground"],
+    ["surface", "STONE", "3", "lua", "SURFACE_STONE", "rock, cliffs, ruins"],
+    ["surface", "WOOD", "4", "lua", "SURFACE_WOOD", "trees, logs, wooden props"],
+    ["surface", "SAND", "5", "lua", "SURFACE_SAND", "beaches and desert"],
+    ["surface", "SNOW", "6", "lua", "SURFACE_SNOW", "snowfields"],
+    ["surface", "ORE", "7", "lua", "SURFACE_ORE", "Palworld's own ore, coal, sulfur and quartz nodes"]
   ]
 }

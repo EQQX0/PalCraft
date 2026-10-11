@@ -7,6 +7,8 @@ P.off = {
     hunter = 0x000A00,
     environment = 0x000B00,
     luastate = 0x000C00,
+    probe = 0x000D00,
+    body = 0x000D40,
     rays = 0x100000,
     entities = 0x200000,
     damage = 0x280000,
@@ -179,6 +181,22 @@ P.FrameHeader = {
     ["fovYDeg"] = { 0x28, "<f", 4 },
     ["aspect"] = { 0x2C, "<f", 4 },
 }
+P.Probe = {
+    ["reqSeq"] = { 0x00, "<I4", 4 },
+    ["respSeq"] = { 0x04, "<I4", 4 },
+    ["start"] = { 0x08, "<fff", 12 },
+    ["end"] = { 0x14, "<fff", 12 },
+    ["kind"] = { 0x20, "<I4", 4 },
+}
+P.Body = {
+    ["food"] = { 0x00, "<f", 4 },
+    ["warmth"] = { 0x04, "<i4", 4 },
+    ["temperature"] = { 0x10, "<i4", 4 },
+    ["resistHeat"] = { 0x14, "<i4", 4 },
+    ["resistCold"] = { 0x18, "<i4", 4 },
+    ["stomach"] = { 0x1C, "<f", 4 },
+    ["valid"] = { 0x20, "<I4", 4 },
+}
 P.state = {
     CAMERA_VALID = 0x001,
     PLAYER_VALID = 0x002,
@@ -247,6 +265,16 @@ P.const = {
     TAG_BASE_W = 37,
     TAG_H = 7,
 }
+P.surface = {
+    NONE = 0,
+    SOIL = 1,
+    GRASS = 2,
+    STONE = 3,
+    WOOD = 4,
+    SAND = 5,
+    SNOW = 6,
+    ORE = 7,
+}
 P.tune = {
     host_near_m = 0.1,
     ray_budget_ms = 4.0,
@@ -259,6 +287,11 @@ P.tune = {
     link_timeout_ms = 2000,
     status_hit_fraction = 0.02,
     status_enemy_radius_m = 25,
+    hit_enemy_radius_m = 40,
+    body_period_ms = 1000,
+    heat_settle_ms = 4000,
+    pal_box_min_radius_m = 0.45,
+    pal_box_min_half_m = 0.5,
 }
 P.hook = {
     tick = "/Game/Pal/Blueprint/Controller/BP_PalPlayerController.BP_PalPlayerController_C:ReceiveTick",

@@ -4,6 +4,7 @@ local P = require("gen_protocol")
 local U = require("util")
 local shm = require("shm")
 local entities = require("entities")
+local body = require("body")
 local M = {}
 
 local DQ, HE = P.off.damage, P.off.hunter
@@ -68,10 +69,14 @@ local function watch_player(env)
             -- Poison or burn from a fight reaches Steve. With nobody near, the hidden character is hungry or
             -- cold, which the player cannot see: the top-up below is all it gets.
             if who and near(who.pos, env.feet, P.tune.status_enemy_radius_m) then status = status + loss end
-        else
+        elseif who and near(who.pos, env.feet, P.tune.hit_enemy_radius_m) then
             hits, total, lastDamage, lastHitTick = hits + 1, total + loss, loss, env.tick
-            if who then lastFrom, lastKind = who.pos, who.kind else lastFrom, lastKind = env.feet, 0 end
+            lastFrom, lastKind = who.pos, who.kind
+        elseif body.exposed() then
+            status = status + loss -- freezing or burning: Steve sees it on his temperature gauge
         end
+        -- Any other loss is Palworld's own survival at work on the hidden character: an empty stomach, a fall
+        -- while it is carried. Steve has Minecraft's hunger and fall damage instead, so those stop here.
         cp:SetHP({ Value = math.floor(maxHp * 1000) })
         hp = maxHp
     end

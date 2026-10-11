@@ -65,6 +65,10 @@ local function describe(a, pawnAddr, feet, r2)
     local radius, half = 0.4, 0.9
     local cap = a.CapsuleComponent
     if cap and cap:IsValid() then radius, half = cap:GetScaledCapsuleRadius() / 100, cap:GetScaledCapsuleHalfHeight() / 100 end
+    -- A Lamball's capsule is a 60 cm ball that the grass and the terrain blocks around it swallow. Give small Pals
+    -- a box Steve can find with a sword, grown upward from where they stand.
+    local feetY = y - half
+    radius, half = math.max(radius, P.tune.pal_box_min_radius_m), math.max(half, P.tune.pal_box_min_half_m)
     local name = a:GetClass():GetFName():ToString():gsub("^BP_", ""):gsub("_C$", "")
     local seen = byId[id]
     local kind = seen and seen.kind or classify(a, cp, name, maxHp)
@@ -75,8 +79,8 @@ local function describe(a, pawnAddr, feet, r2)
     e.maxHp, e.pos, e.seen = maxHp, { x, y, z }, frame
     byId[id] = e
     return string.pack("<I8I4I4fffffffffffffffI4c48", id, kind, 0,
-        x, y - half, z, 0, math.sin(yaw / 2), 0, math.cos(yaw / 2),
-        x, y, z, radius, half, radius, hp, maxHp, flags, name:sub(1, 47))
+        x, feetY, z, 0, math.sin(yaw / 2), 0, math.cos(yaw / 2),
+        x, feetY + half, z, radius, half, radius, hp, maxHp, flags, name:sub(1, 47))
 end
 
 function M.tick(env)

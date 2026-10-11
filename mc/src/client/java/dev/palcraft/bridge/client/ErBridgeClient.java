@@ -97,11 +97,16 @@ public class ErBridgeClient implements ClientModInitializer {
 					? "Palworld character stands in for you (enemies can hit you)" : "Palworld character stays put and visible");
 			}
 			WorldBootstrap.tick(mc);
+			Unstuck.tick(mc);
+			GatherClient.tick(mc);
+			BodyHud.tick(mc);
+			FramePassthrough.watchFrameRate(mc);
 			DevCommands.tick(mc);
 		});
 
 		HudRenderCallback.EVENT.register((graphics, tickCounter) -> {
 			renderPrompt(graphics);
+			BodyHud.render(Minecraft.getInstance(), graphics);
 			renderStatus(graphics);
 		});
 		EntityRendererRegistry.register(ErBridgeEntities.ER_ENTITY, ErEntityRenderer::new);

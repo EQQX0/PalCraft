@@ -4,6 +4,7 @@ import com.mojang.blaze3d.pipeline.RenderTarget;
 import com.mojang.blaze3d.pipeline.TextureTarget;
 import com.mojang.blaze3d.platform.GlStateManager;
 import dev.palcraft.bridge.link.ControlState;
+import dev.palcraft.bridge.gen.Tune;
 import dev.palcraft.bridge.link.ErLink;
 import dev.palcraft.bridge.link.Protocol;
 import net.minecraft.client.Minecraft;
@@ -87,10 +88,42 @@ public final class FramePassthrough {
 	 */
 	private static float transferScale(int w, int h) {
 		if (!autoScale) return frameScale;
-		for (float s : SCALES) {
-			if ((double) w * s * h * s <= 1_200_000.0) return s;
+		for (int i = smallerBy; i < SCALES.length; i++) {
+			float s = SCALES[i];
+			if ((double) w * s * h * s <= Tune.FRAME_PIXEL_BUDGET * 1_000_000.0) return s;
 		}
 		return 0.25F;
+	}
+
+	/** System "picture_scale": how many sizes below the largest the layers go on this PC. */
+	private static int smallerBy;
+	private static long slowSince, settleUntil;
+
+	/**
+	 * Sharp layers cost frame rate on a slow PC. Start with the largest size, and whenever Minecraft stays
+	 * under the wanted frame rate for two seconds, go one size down. Once per client tick.
+	 */
+	public static void watchFrameRate(Minecraft mc) {
+		long now = System.currentTimeMillis();
+		if (!autoScale || !wanted() || mc.level == null || mc.screen != null || now < settleUntil) {
+			slowSince = 0;
+			if (mc.level == null) {
+				settleUntil = now + 15_000; // joining a world is slow for its own reasons
+			}
+			return;
+		}
+		// Minecraft never runs faster than frameLimit(), which follows Palworld's own frame rate.
+		double wantedFps = Math.min(Tune.FRAME_MIN_FPS, frameBudget - 10);
+		if (mc.getFps() >= wantedFps || smallerBy >= SCALES.length - 1) {
+			slowSince = 0;
+		} else if (slowSince == 0) {
+			slowSince = now;
+		} else if (now - slowSince >= 2000) {
+			smallerBy++;
+			slowSince = 0;
+			settleUntil = now + 4000;
+			LOG.info("Minecraft at {} fps: sending smaller layers ({} of the window)", mc.getFps(), SCALES[smallerBy]);
+		}
 	}
 	private static long budgetAt, budgetHostFrame;
 	private static int frameBudget = 90;

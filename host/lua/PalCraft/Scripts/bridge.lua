@@ -13,7 +13,7 @@ local CONTROL_SIZE = 0x64
 
 -- The other systems. Each has tick(env); a system that fails to load is reported and skipped.
 local systems = {}
-for _, name in ipairs({ "life", "rays", "entities", "combat", "selftest" }) do
+for _, name in ipairs({ "life", "rays", "probe", "body", "entities", "combat", "selftest" }) do
     local ok, m = pcall(require, name)
     if ok then systems[#systems + 1] = { name = name, mod = m }
     else U.log("system " .. name .. " not loaded: " .. tostring(m)) end

@@ -55,6 +55,7 @@ public class ErBridgeMod implements ModInitializer {
 	@Override
 	public void onInitialize() {
 		ErBridgeEntities.init();
+		Gather.register();
 		ServerLifecycleEvents.SERVER_STARTING.register(server -> TerrainRegeneration.reset());
 		ServerLifecycleEvents.SERVER_STARTED.register(TerrainManager::onServerStarted);
 		ServerLifecycleEvents.SERVER_STARTED.register(LifeBridge::onServerStarted);  // after TerrainManager: needs isBridgeWorld()
@@ -68,8 +69,12 @@ public class ErBridgeMod implements ModInitializer {
 			TerrainRegeneration.reset();
 			EntityBridge.reset();
 			CombatBridge.reset();
+			Gather.reset();
+			dev.palcraft.bridge.entity.PalLoot.reset();
 		});
 		ServerTickEvents.END_SERVER_TICK.register(TerrainManager::onServerTick);
+		ServerTickEvents.END_SERVER_TICK.register(Gather::onServerTick);
+		ServerTickEvents.END_SERVER_TICK.register(BodyBridge::onServerTick);
 		ServerTickEvents.END_SERVER_TICK.register(EntityBridge::onServerTick);
 		ServerTickEvents.END_SERVER_TICK.register(CombatBridge::onServerTick);
 		ServerTickEvents.END_SERVER_TICK.register(LifeBridge::onServerTick);
