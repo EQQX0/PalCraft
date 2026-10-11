@@ -1,0 +1,16 @@
+{
+	"block.palcraft.terrain": "ER Terrain",
+	"category.palcraft": "PalCraft",
+	"key.palcraft.camera_mode": "Switch camera mode (drive Palworld / follow Palworld)",
+	"key.palcraft.overlay": "Switch control to Palworld (F8 in Palworld switches back)",
+	"key.palcraft.status": "Debug view (status, hitboxes)",
+	"key.palcraft.hunter": "Palworld character stands in for you (on/off)",
+	"key.palcraft.passthrough": "Draw Minecraft inside Palworld (occlusion)",
+	"death.attack.palcraft.monster": "%1$s was slain by %2$s",
+	"death.attack.palcraft.monster_hit": "%1$s was slain by a monster",
+	"death.attack.palcraft.monster_hit.player": "%1$s was slain by a monster while fighting %2$s",
+	"death.attack.palcraft.status": "%1$s succumbed to a status ailment",
+	"death.attack.palcraft.status.player": "%1$s succumbed to a status ailment while fighting %2$s",
+	"death.attack.palcraft.host_death": "%1$s died in the Lands Between",
+	"key.palcraft.action": "Palworld action (open, pick up, talk)"
+}

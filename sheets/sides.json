@@ -1,0 +1,10 @@
+{
+  "_doc": "The programs that touch the shared files. One row = one program.",
+  "columns": ["id", "game", "language", "source", "ships_as", "thread"],
+  "rows": [
+    ["mc",     "minecraft-java", "Java 21 (Fabric 1.21.1)", "mc/",          "palcraft-<version>.jar in the Prism instance mods folder", "Minecraft render + server threads"],
+    ["lua",    "palworld",       "Lua 5.4 (UE4SS 3.0.1)",   "host/lua/",    "Mods/PalCraft/Scripts/*.lua",                              "Palworld game thread"],
+    ["native", "palworld",       "C++17 (llvm-mingw)",      "host/native/", "Mods/PalCraft/palcraft.dll",                               "Palworld RHI thread (inside Present)"],
+    ["shared", "-",              "-",                       "-",            "-",                                                        "-"]
+  ]
+}

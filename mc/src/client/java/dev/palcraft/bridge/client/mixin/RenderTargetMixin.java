@@ -1,0 +1,60 @@
+package dev.palcraft.bridge.client.mixin;
+
+import com.mojang.blaze3d.pipeline.RenderTarget;
+import com.mojang.blaze3d.platform.GlStateManager;
+import dev.palcraft.bridge.client.FramePassthrough;
+import dev.palcraft.bridge.client.Overlay;
+import dev.palcraft.bridge.client.WindowsOverlay;
+import net.minecraft.client.Minecraft;
+import org.lwjgl.system.Platform;
+import org.spongepowered.asm.mixin.Mixin;
+import org.spongepowered.asm.mixin.injection.At;
+import org.spongepowered.asm.mixin.injection.Inject;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
+
+/**
+ * The final blit to the window normally leaves the window's alpha untouched. With a
+ * transparent window that alpha decides what shows through, so: clear it first (to 0 in
+ * overlay mode, 1 otherwise) and, in overlay mode, copy Minecraft's alpha along with color.
+ *
+ * <p>Only the main render target's blit targets the window. The same method also
+ * composites other targets (e.g. entity outlines, every frame) onto the main target, and
+ * those must be left alone or they would wipe the rendered world.
+ */
+@Mixin(RenderTarget.class)
+public abstract class RenderTargetMixin {
+	private static final int GL_COLOR_BUFFER_BIT = 0x4000;
+
+	private boolean palcraft$isWindowBlit() {
+		return (Object) this == Minecraft.getInstance().getMainRenderTarget();
+	}
+
+	@Inject(method = "_blitToScreen", at = @At("HEAD"), cancellable = true)
+	private void palcraft$clearWindow(int width, int height, boolean disableBlend, CallbackInfo ci) {
+		if (!palcraft$isWindowBlit()) {
+			return;
+		}
+		if (Platform.get() == Platform.WINDOWS) {
+			WindowsOverlay.updateCursor(Minecraft.getInstance());
+		}
+		FramePassthrough.endFrame(Minecraft.getInstance());
+		if (!Overlay.transparentWindow()) {
+			return;
+		}
+		GlStateManager._colorMask(true, true, true, true);
+		GlStateManager._clearColor(0.0F, 0.0F, 0.0F, Overlay.windowBackgroundAlpha());
+		GlStateManager._clear(GL_COLOR_BUFFER_BIT, Minecraft.ON_OSX);
+		if (FramePassthrough.activeInHost() || (Overlay.active() && Overlay.hostBusy())) {
+			// The host game is showing this frame inside its own, or its own death/loading screen:
+			// Windows keeps an opaque input framebuffer and hides it with nonzero window opacity.
+			ci.cancel();
+		}
+	}
+
+	@Redirect(method = "_blitToScreen", at = @At(value = "INVOKE",
+		target = "Lcom/mojang/blaze3d/platform/GlStateManager;_colorMask(ZZZZ)V", ordinal = 0))
+	private void palcraft$writeAlpha(boolean r, boolean g, boolean b, boolean a) {
+		GlStateManager._colorMask(r, g, b, a || (Overlay.active() && palcraft$isWindowBlit()));
+	}
+}

@@ -1,0 +1,9 @@
+{
+  "_doc": "Every key PalCraft adds. One row = one key. vk = Windows virtual key code where the native side reads it ('-' otherwise).",
+  "columns": ["id", "key", "vk", "where", "side", "does"],
+  "rows": [
+    ["switch_to_host", "F8", "-",    "Minecraft has control", "mc",     "hands keyboard and mouse to Palworld (menus, catching, base)"],
+    ["switch_to_mc",   "F8", "0x77", "Palworld has control",  "native", "hands keyboard and mouse back to Minecraft"],
+    ["host_action",    "G",  "-",    "Minecraft has control", "mc",     "asks Palworld to interact (0.1 answers unsupported)"]
+  ]
+}

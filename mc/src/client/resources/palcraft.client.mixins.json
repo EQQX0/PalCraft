@@ -1,0 +1,23 @@
+{
+	"required": true,
+	"package": "dev.palcraft.bridge.client.mixin",
+	"compatibilityLevel": "JAVA_21",
+	"client": [
+		"ClientLevelMixin",
+		"CameraMixin",
+		"DefaultPlayerSkinMixin",
+		"FogRendererMixin",
+		"GameRendererMixin",
+		"GuiMixin",
+		"LevelRendererMixin",
+		"MinecraftMixin",
+		"PlayerPositionPacketMixin",
+		"RenderSystemMixin",
+		"RenderTargetMixin",
+		"ScreenMixin",
+		"WindowMixin"
+	],
+	"injectors": {
+		"defaultRequire": 1
+	}
+}

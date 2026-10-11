@@ -1,0 +1,22 @@
+{
+  "_doc": "Every number someone may want to turn. One row = one value. side = who uses it.",
+  "columns": ["id", "value", "unit", "side", "meaning"],
+  "rows": [
+    ["host_near_m",          0.10,  "m",      "lua",    "the Palworld near plane (UE default, 10 cm)"],
+    ["depth_bias_m",         0.03,  "m",      "native", "a block must be this far behind a Palworld surface to be hidden"],
+    ["light_gain",           2.6,   "x",      "native", "how strongly Palworld brightness lights blocks"],
+    ["light_min",            0.18,  "x",      "native", "darkest a block gets"],
+    ["light_tint",           0.35,  "0..1",   "native", "how much of the Palworld light colour blocks take"],
+    ["fog_strength",         0.55,  "0..1",   "native", "haze on far blocks"],
+    ["fog_start_m",          40,    "m",      "native", "haze starts"],
+    ["fog_end_m",            400,   "m",      "native", "haze is full"],
+    ["ray_budget_ms",        4.0,   "ms",     "lua",    "time per tick spent answering terrain rays"],
+    ["ray_min_per_tick",     32,    "rays",   "lua",    "rays answered even on a slow tick"],
+    ["entity_radius_m",      64,    "m",      "lua",    "Pals farther than this from Steve are not sent to Minecraft"],
+    ["entity_period_ticks",  2,     "ticks",  "lua",    "entity table refresh period"],
+    ["mc_full_health",       20,    "points", "lua",    "Minecraft damage points that equal a full health bar"],
+    ["pal_damage_scale",     1.0,   "x",      "lua",    "extra multiplier on Minecraft damage dealt to Pals"],
+    ["link_timeout_ms",      2000,  "ms",     "lua",    "Minecraft is gone if its heartbeat stalls this long"],
+    ["status_hit_fraction",  0.02,  "0..1",   "lua",    "HP loss below this fraction of max counts as a status tick, not a hit"]
+  ]
+}

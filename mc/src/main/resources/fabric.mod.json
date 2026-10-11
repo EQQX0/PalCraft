@@ -1,0 +1,33 @@
+{
+	"schemaVersion": 1,
+	"id": "palcraft",
+	"version": "${version}",
+	"name": "PalCraft",
+	"description": "Minecraft movement, building and combat in Palworld through a native Windows bridge. Built on Minecraft Ring by justbustin and siddoff.",
+	"authors": ["justbustin", "siddoff"],
+	"contact": {
+		"homepage": "https://github.com/siddoff/Minecraft-Ring",
+		"sources": "https://github.com/siddoff/Minecraft-Ring",
+		"issues": "https://github.com/siddoff/Minecraft-Ring/issues"
+	},
+	"license": "MIT",
+	"icon": "assets/palcraft/icon.png",
+	"environment": "*",
+	"entrypoints": {
+		"main": ["dev.palcraft.bridge.ErBridgeMod"],
+		"client": ["dev.palcraft.bridge.client.ErBridgeClient"]
+	},
+	"mixins": [
+		"palcraft.mixins.json",
+		{
+			"config": "palcraft.client.mixins.json",
+			"environment": "client"
+		}
+	],
+	"depends": {
+		"fabricloader": ">=0.16.0",
+		"minecraft": "~1.21.1",
+		"java": ">=21",
+		"fabric-api": "*"
+	}
+}

@@ -1,0 +1,10 @@
+.tools/
+ref/
+build/
+dist/
+*.dll
+*.o
+run/
+.gradle/
+runtime/
+*.log

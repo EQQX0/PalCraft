@@ -1,0 +1,8 @@
+{
+  "_doc": "The games in the mashup. One row = one game. slug is the Melty slug.",
+  "columns": ["slug", "role", "title", "version_built_on", "loader", "launch", "files_go", "reads_from_install"],
+  "rows": [
+    ["palworld",       "primary",   "Palworld",                "1.0.5 (Steam build 25246127), DX11", "UE4SS 3.0.1 (Melty installs it)",  "the game through Steam",                         "{game}/Pal/Binaries/Win64/Mods/PalCraft", "nothing"],
+    ["minecraft-java", "companion", "Minecraft: Java Edition", "1.21.1",                             "Fabric 0.19.5 via Prism Launcher", "prismlauncher.exe --launch PalCraft (together)", "{localappdata}/PalCraft/Prism",           "nothing (Prism downloads Minecraft with the player account)"]
+  ]
+}

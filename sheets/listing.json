@@ -1,0 +1,20 @@
+{
+  "_doc": "What the Melty page says and ships. One row = one fact. kind: text = wording, file = a path in this project that must exist, choice = a decision.",
+  "columns": ["id", "kind", "value"],
+  "rows": [
+    ["title",        "text",   "PalCraft"],
+    ["tagline",      "text",   "Play Palworld as Steve: Minecraft movement, blocks and weapons on the Palpagos Islands."],
+    ["version",      "text",   "0.1.0"],
+    ["players",      "choice", "single player"],
+    ["license",      "choice", "MIT"],
+    ["remix",        "choice", "allowed"],
+    ["credit_1",     "text",   "Minecraft Ring by justbustin and siddoff (MIT): the bridge protocol and the Fabric mod this builds on"],
+    ["credit_2",     "text",   "universal-modder by rehan-remade (MIT): the passthrough method and tooling"],
+    ["credit_3",     "text",   "MinHook by Tsuda Kageyu (BSD 2-Clause)"],
+    ["credit_4",     "text",   "UE4SS by the UE4SS-RE team (MIT), Fabric (Apache 2.0), Prism Launcher (GPL-3.0, unmodified, fetched at install)"],
+    ["readme",       "file",   "README.md"],
+    ["license_file", "file",   "LICENSE"],
+    ["notices",      "file",   "THIRD_PARTY.md"],
+    ["recipe",       "file",   "melty.json"]
+  ]
+}

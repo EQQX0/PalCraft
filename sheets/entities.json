@@ -1,0 +1,11 @@
+{
+  "_doc": "How Palworld characters appear to Minecraft. One row = one class of character, tested top to bottom. kind refers to flags.json group ent ('-' = not listed).",
+  "columns": ["id", "match", "kind", "hurtable", "box", "note"],
+  "rows": [
+    ["player",    "is the pawn of the local player",                  "-",     false, "-",                     "never listed: it is the stand-in for Steve"],
+    ["own_pal",   "PalCharacter that belongs to the local player",    "OTHER", false, "capsule radius/height", "your team and base workers"],
+    ["npc_human", "class name starts with BP_NPC_",                   "SMALL", true,  "capsule radius/height", "syndicate, merchants: Palworld decides what attacking them means"],
+    ["boss_pal",  "max HP at or above 4000",                          "LARGE", true,  "capsule radius/height", "alphas and tower bosses"],
+    ["wild_pal",  "any other PalCharacter",                           "SMALL", true,  "capsule radius/height", "wild Pals"]
+  ]
+}

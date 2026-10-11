@@ -1,0 +1,7 @@
+{
+  "replace": false,
+  "values": [
+    "palcraft:status",
+    "palcraft:host_death"
+  ]
+}
