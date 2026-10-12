@@ -142,3 +142,18 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
     - One Palworld crash (access violation inside UE4SS, game thread) 46 s after a dev reload of the new
       hud.lua while Minecraft was linking. Not seen again in the sessions after it; cause unknown.
     - tools/shmdump.py prints the newer Body fields wrong. Read them raw with struct.
+  - "Bows, guns, riding and raids. Test" (stopped part way: the creator asked for a break and a shutdown):
+    - Tree chopping works in Palworld mode (wood 2 -> 68, fiber 0 -> 36). tools/tree.sh stands the
+      character at a PalFoliageInstance (WorldTransform.Location); the trunk can be a step off that point.
+    - Old Bow and arrows crafted at the workbench by play. Hotbar shows the bow in slot 3 with the round
+      loaded and "+N" arrows carried; aim, shot and the count dropping all work. Weapons switch with the
+      mouse wheel, not the number keys.
+    - Found: a bow aim zooms Palworld's camera from 75 to 55 degrees and Steve filled the left half of
+      the picture. HostBody.watchCamera now scales the camera distance by the zoom (body_near_fov_deg);
+      seen working in the dev client: Steve steps out while the zoomed aim is that close.
+    - New, built but NOT yet checked on screen: Steve holds the Minecraft item that stands for the tool in
+      hand (ItemInHandLayerMixin redirects, LoadoutHud.inHand).
+    - Not done: an arrow hit on a Pal (damage), guns (tech level 21 and ingots away), riding (needs a Pal
+      Gear Workbench, a saddle and a caught mount), raids (need a base; Palworld starts them).
+    - The 0.2.1 draft on Melty (release b4dfe987, test fda8e15e passed) does not hold these two changes.
+      They need a jar build, package, upload, submit and a new test before publishing.

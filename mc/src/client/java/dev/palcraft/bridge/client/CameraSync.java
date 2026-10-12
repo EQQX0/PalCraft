@@ -204,7 +204,7 @@ public final class CameraSync {
 		float yaw = (float) Math.toDegrees(Math.atan2(-dir.x, dir.z));
 		float pitch = (float) Math.toDegrees(-Math.asin(Math.max(-1.0, Math.min(1.0, dir.y))));
 		HostBody.place(mc, map, STATE, Math.max(-40.0F, Math.min(40.0F, pitch * 0.6F)));
-		HostBody.watchCamera(mc.player, pos);
+		HostBody.watchCamera(mc.player, pos, STATE.fovYDeg);
 		CameraAccess access = (CameraAccess) camera;
 		access.palcraft$setRotation(yaw, pitch);
 		access.palcraft$setPosition(pos);

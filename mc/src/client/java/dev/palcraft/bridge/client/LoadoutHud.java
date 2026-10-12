@@ -62,6 +62,18 @@ public final class LoadoutHud {
 		}
 	}
 
+	/** The hotbar slot of the tool in hand, or -1. Palworld counts the sphere in hand as the slot after its weapon slots. */
+	private static int held() {
+		boolean sphere = NUM[1] > 0 && !STACKS[SLOTS - 1].isEmpty();
+		return NUM[0] < 0 ? -1 : NUM[0] < tools ? NUM[0] : sphere ? SLOTS - 1 : -1;
+	}
+
+	/** Palworld mode: the item Steve holds, the one that stands for the Palworld tool in hand. */
+	public static ItemStack inHand() {
+		int held = held();
+		return HostBody.active() && held >= 0 ? STACKS[held] : ItemStack.EMPTY;
+	}
+
 	/** The Minecraft item that stands for a Palworld tool or sphere (sheets/tools.json). */
 	private static Item item(String palworld) {
 		String name = palworld.toLowerCase(Locale.ROOT);
@@ -78,8 +90,7 @@ public final class LoadoutHud {
 	public static void render(Minecraft mc, GuiGraphics g) {
 		int middle = g.guiWidth() / 2, bottom = g.guiHeight();
 		boolean sphere = NUM[1] > 0 && !STACKS[SLOTS - 1].isEmpty();
-		// Palworld counts the sphere in hand as the slot after its weapon slots.
-		int held = NUM[0] < 0 ? -1 : NUM[0] < tools ? NUM[0] : sphere ? SLOTS - 1 : -1;
+		int held = held();
 		RenderSystem.enableBlend();
 		g.pose().pushPose();
 		g.pose().translate(0.0F, 0.0F, -90.0F);

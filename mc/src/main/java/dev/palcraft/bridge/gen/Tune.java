@@ -19,8 +19,10 @@ public final class Tune {
 	public static final double AUTOSAVE_S = 45.0;
 	/** Palworld mode: Steve is drawn with at least this much block light, so Palworld's night does not turn him into a silhouette (level) */
 	public static final double BODY_MIN_LIGHT = 9.0;
-	/** Palworld mode: with the camera closer to Steve than this (a wall behind it), Steve is not drawn (m) */
+	/** Palworld mode: with the camera closer to Steve than this (a wall behind it, or a zoomed aim that makes it look so), Steve is not drawn (m) */
 	public static final double BODY_NEAR_HIDE_M = 1.6;
+	/** the vertical field of view of Palworld's normal camera; a narrower one counts as a camera that much closer (deg) */
+	public static final double BODY_NEAR_FOV_DEG = 46.7;
 	/** and he is drawn again once it is this far away (m) */
 	public static final double BODY_NEAR_SHOW_M = 1.9;
 	/** Palworld's inventory screen: the middle of its character preview lies this far right of the middle of the screen (screen heights) */

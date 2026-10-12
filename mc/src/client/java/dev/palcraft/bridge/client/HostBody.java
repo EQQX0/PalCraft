@@ -52,14 +52,20 @@ public final class HostBody {
 		return active && tooClose;
 	}
 
-	/** Every frame, after Steve is placed: how far the camera is from the line through his body. */
-	static void watchCamera(LocalPlayer p, Vec3 cam) {
+	/**
+	 * Every frame, after Steve is placed: how far the camera looks from the line through his body. A zoomed
+	 * aim narrows the view, and he grows in the picture as if the camera had stepped closer.
+	 */
+	static void watchCamera(LocalPlayer p, Vec3 cam, float fovYDeg) {
 		if (p == null) {
 			return;
 		}
 		double dy = cam.y - Math.max(p.getY(), Math.min(p.getY() + p.getBbHeight(), cam.y));
 		double dx = cam.x - p.getX(), dz = cam.z - p.getZ();
 		double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+		if (fovYDeg > 1.0F && fovYDeg < Tune.BODY_NEAR_FOV_DEG) {
+			d *= Math.tan(Math.toRadians(fovYDeg) / 2.0) / Math.tan(Math.toRadians(Tune.BODY_NEAR_FOV_DEG) / 2.0);
+		}
 		tooClose = d < (tooClose ? Tune.BODY_NEAR_SHOW_M : Tune.BODY_NEAR_HIDE_M);
 	}
 

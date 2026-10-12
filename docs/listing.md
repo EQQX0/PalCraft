@@ -67,7 +67,7 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 - Palworld mode shows Steve. In 0.2.0 F8 showed Palworld's own character.
 - Fixed: Palworld's memory grew by about 1 GB a minute while Minecraft was linked. A long session could run the PC out of memory. Update if you play 0.2.0.
 - Fixed: progress in the Minecraft world could be lost when Palworld closed first. The world now saves every 45 seconds, and Minecraft closes by itself when Palworld is gone.
-- Fixed: the tool your Palworld character holds floated on Steve's chest. Steve's hands are empty in Palworld mode, and the hotbar shows the tool in use.
+- Fixed: the tool your Palworld character holds floated on Steve's chest. In Palworld mode Steve holds the Minecraft item that stands for it.
 - Palworld mode keeps Minecraft's HUD: hearts for your character's health, hunger for its stomach, the experience bar for its level, with your armor and temperature gauge. Palworld's own gauges, level display and tool panel step aside.
 - The hotbar in Palworld mode holds Palworld's tools as Minecraft items, with your Pal Spheres and their count in the last slot.
 - Palworld's inventory screen shows Steve in place of its own character.

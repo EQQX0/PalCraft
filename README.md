@@ -143,7 +143,7 @@ Every other key is Minecraft's own.
 - Fixed: progress in the Minecraft world could be lost when Palworld closed first. The world saves every 45
   seconds, and Minecraft closes by itself 20 seconds after Palworld is gone.
 - Fixed: the tool the Palworld character holds floated on Steve's chest. The mod hides it with the character.
-  Steve's hands are empty in Palworld mode, and the hotbar shows the tool in use.
+  In Palworld mode Steve holds the Minecraft item that stands for it.
 - Palworld mode keeps Minecraft's HUD: hearts for your character's health, hunger for its stomach, the experience bar for its level, with your armor and temperature gauge. Palworld's own gauges, level display and tool panel step aside.
 - The hotbar in Palworld mode holds Palworld's tools as Minecraft items, with your Pal Spheres and their count in the last slot.
 - Palworld's inventory screen shows Steve in place of its own character.
