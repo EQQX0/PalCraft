@@ -138,6 +138,9 @@ Every other key is Minecraft's own.
   table a script passes as an out parameter, and each terrain ray passed one. PalCraft now gives them back.
 - Fixed: progress in the Minecraft world could be lost when Palworld closed first. The world saves every 45
   seconds, and Minecraft closes by itself 20 seconds after Palworld is gone.
+- Fixed: the tool the Palworld character holds floated on Steve's chest. The mod hides it with the character.
+  Steve's hands are empty in Palworld mode, and Palworld's HUD shows the tool in use.
+- With a wall right behind you in Palworld mode, the camera shows the world ahead instead of Steve's back.
 - Kills as Steve give Palworld experience, with a message when the character levels up.
 - A kit that gained items in an update tops itself up for existing players.
 - Palworld's menus and prompts draw over Minecraft's blocks and over Steve.

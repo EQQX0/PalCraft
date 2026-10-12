@@ -298,6 +298,7 @@ P.tune = {
     heat_settle_ms = 4000,
     pal_box_min_radius_m = 0.45,
     pal_box_min_half_m = 0.5,
+    gear_scan_ticks = 20,
     selftest_mem_ticks = 3600,
     selftest_mem_mb = 300,
     kill_exp_base = 18,

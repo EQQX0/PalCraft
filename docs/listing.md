@@ -63,6 +63,8 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 - Palworld mode shows Steve. In 0.2.0 F8 showed Palworld's own character.
 - Fixed: Palworld's memory grew by about 1 GB a minute while Minecraft was linked. A long session could run the PC out of memory. Update if you play 0.2.0.
 - Fixed: progress in the Minecraft world could be lost when Palworld closed first. The world now saves every 45 seconds, and Minecraft closes by itself when Palworld is gone.
+- Fixed: the tool your Palworld character holds floated on Steve's chest. Steve's hands are empty in Palworld mode, and Palworld's HUD shows the tool in use.
+- With a wall right behind you in Palworld mode, the camera shows the world ahead instead of Steve's back.
 - Kills as Steve give Palworld experience. A message tells you when your character levels up.
 - A kit that gained items in an update tops itself up for existing players.
 

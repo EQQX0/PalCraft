@@ -72,3 +72,14 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
   - Verified by play in Palworld mode: statue + fast travel unlock, NPC talk, survival guide, tech tree, build
     menu, workbench, crafting, Pal Sphere throw and capture, summon, cold, defeat, respawn map, F8 both ways.
     Not tested: riding, gliding, guns, raids, towers, swimming pose.
+  - Played the installed build during Melty's test runs and fixed two more things:
+    - A wall behind Steve collapses Palworld's camera arm and the camera sat 0.5 m from his back, so he
+      filled the screen. Minecraft skips drawing him under 1.25 m (back at 1.5 m): HostBody.watchCamera,
+      EntityRendererMixin.shouldRender.
+    - SetActorHiddenInGame on the character leaves what it holds visible: tools are actors of their own in
+      pawn.Children (PalWeaponBase). standin.lua hides the visible ones with the character, remembers which,
+      and shows those again with it. A Lua reload forgets the list and leaves them hidden (dev only).
+      ItemInHandLayerMixin empties Steve's hands in Palworld mode.
+    - Driving an installed build: tools/mcdrive.py sends keys to Minecraft's input window. tools/pal.sh and
+      `um win shot` put Palworld's window in front, so Minecraft loses the keyboard after each screenshot;
+      F8 hand-over itself works both ways (checked with mcdrive --raw).

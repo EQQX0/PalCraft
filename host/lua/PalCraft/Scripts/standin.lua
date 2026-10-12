@@ -1,5 +1,6 @@
 -- System "stand_in": the Palworld character is hidden and carried to wherever Steve stands, so Palworld
 -- keeps loading the world around him and Pals have someone to attack.
+local P = require("gen_protocol")
 local U = require("util")
 local M = {}
 
@@ -43,10 +44,50 @@ function M.release(pawn)
     end
 end
 
+-- What the character holds is an actor of its own: with only the character hidden, its pickaxe floats on
+-- Steve's chest. gear = addresses of the tools this mod hid, so showing the character shows those and no
+-- tool that Palworld itself had put away.
+local gear = {}
+local gearTick = 0
+local WEAPON
+local function each_tool(pawn, fn)
+    WEAPON = WEAPON or StaticFindObject("/Script/Pal.PalWeaponBase")
+    if not WEAPON or not WEAPON:IsValid() then return end
+    pawn.Children:ForEach(function(_, e)
+        local a = e:get()
+        if a and a:IsValid() and a:IsA(WEAPON) then fn(a) end
+    end)
+end
+local function hide_gear(pawn)
+    each_tool(pawn, function(a)
+        if not a.bHidden then
+            a:SetActorHiddenInGame(true)
+            gear[a:GetAddress()] = true
+        end
+    end)
+end
+local function show_gear(pawn)
+    each_tool(pawn, function(a)
+        if gear[a:GetAddress()] then a:SetActorHiddenInGame(false) end
+    end)
+    gear = {}
+end
+
 function M.hide(pawn, want)
-    if want ~= hidden and pawn and pawn:IsValid() then
+    if not (pawn and pawn:IsValid()) then return end
+    want = want and true or false
+    if want ~= hidden then
         pawn:SetActorHiddenInGame(want)
         hidden = want
+        gearTick = 0
+        if not want then U.guard("gear", function() show_gear(pawn) end) end
+    end
+    if hidden then
+        if gearTick <= 0 then
+            gearTick = P.tune.gear_scan_ticks
+            U.guard("gear", function() hide_gear(pawn) end)
+        end
+        gearTick = gearTick - 1
     end
 end
 

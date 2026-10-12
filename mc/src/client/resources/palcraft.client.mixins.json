@@ -10,6 +10,7 @@
 		"FogRendererMixin",
 		"GameRendererMixin",
 		"GuiMixin",
+		"ItemInHandLayerMixin",
 		"LevelRendererMixin",
 		"LivingEntityMixin",
 		"LocalPlayerMixin",
