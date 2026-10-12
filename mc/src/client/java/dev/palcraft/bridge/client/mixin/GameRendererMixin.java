@@ -3,6 +3,7 @@ package dev.palcraft.bridge.client.mixin;
 import com.mojang.blaze3d.vertex.PoseStack;
 import dev.palcraft.bridge.client.CameraSync;
 import dev.palcraft.bridge.client.FramePassthrough;
+import dev.palcraft.bridge.client.HostBody;
 import net.minecraft.client.DeltaTracker;
 import net.minecraft.client.Minecraft;
 import dev.palcraft.bridge.client.Overlay;
@@ -38,6 +39,14 @@ public abstract class GameRendererMixin {
 	private void palcraft$noHurtTilt(PoseStack poseStack, float partialTick, CallbackInfo ci) {
 		if (Overlay.active()) {
 			ci.cancel();
+		}
+	}
+
+	/** Palworld mode: Steve breaks and places nothing, so no block is marked as his target. */
+	@Inject(method = "shouldRenderBlockOutline", at = @At("HEAD"), cancellable = true)
+	private void palcraft$noOutlineInPalworldMode(CallbackInfoReturnable<Boolean> cir) {
+		if (HostBody.active()) {
+			cir.setReturnValue(false);
 		}
 	}
 

@@ -114,3 +114,7 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
       pointer is out (pc.bShowMouseCursor, true in every menu) or WBP_IngameConstruction_C is visible
       (build mode shows no pointer; Palworld makes that widget the first time the player builds).
     - A new Lua module must be in main.lua's reload list, or a dev reload keeps running the old copy.
+    - Melty's test run of the installed build showed Minecraft's block outline in the world behind Steve in
+      Palworld mode. GameRendererMixin answers shouldRenderBlockOutline with false there.
+    - Driving an installed build: F8 goes to Minecraft's input window (tools/mcdrive.py). Sent to Palworld's
+      window in Minecraft mode it only hands focus back to Minecraft.
