@@ -7,14 +7,23 @@ PalCraft runs both games at once. Minecraft: Java Edition owns your player, your
 - Walk, sprint, jump and swim on Palworld's terrain with Minecraft movement.
 - Place and break blocks anywhere on the islands. Build a cobblestone hut next to a Lamball.
 - Hold attack on Palworld's ground, rock and trees to dig Minecraft materials: logs, dirt, seeds, cobblestone, coal, iron, gold, diamonds. Better tools dig faster and find better ore.
-- Hit Pals with a sword, shoot them with a bow, or light TNT beside them. A Pal you kill drops Minecraft loot and experience.
+- Hit Pals with a sword, shoot them with a bow, or light TNT beside them. A Pal you kill drops Minecraft loot and experience, and your Palworld character earns experience and levels for it.
 - Farm, craft and smelt. The kit holds water, seeds, saplings and a crafting table.
 - Wear armor. A Pal's hit goes through Minecraft's armor, toughness, Protection and shield rules.
 - Eat golden apples. Alpha Pals drop the enchanted one, and the old recipe is back: eight gold blocks around an apple.
 - Watch your body. Steve's hunger feeds your hidden Palworld character, AppleSkin shows saturation, and a gauge above the hunger bar shows Palworld's temperature. Campfires, torches and leather armor keep the cold off.
-- Press **F5** for third person. Press **F8** to hand the keyboard and mouse to Palworld for menus, catching and base work, and **F8** again to go back.
+- Press **F5** for third person.
+- Press **F8** for Palworld mode: catch Pals, build a base, craft, talk to people and fast travel, with Steve as your character.
 
 You start in survival with a kit: iron sword, bow and arrows, iron pickaxe, building blocks, TNT, food, torches, two water buckets, seeds, saplings, a crafting table and two golden apples. Type `/gamemode creative` if you would rather build without limits.
+
+## Palworld mode
+
+Press **F8** and Palworld takes the keyboard and mouse. Its rules, its HUD and its menus are yours, and Steve stays on screen as your character, walking, crouching and swinging where Palworld's own would. Press **F8** again for Minecraft's controls.
+
+Played this way so far: the fast travel statue, the first quests, talking to the islander, the tech tree, the build menu, a workbench, a pickaxe, Pal Spheres, catching a Chikipi, summoning it, the cold at night, defeat, the respawn map and respawning.
+
+The two modes keep separate health. In Palworld mode Palworld's health bar is the one that counts, and nothing in Minecraft hurts Steve.
 
 ## What you need
 
@@ -49,7 +58,15 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 2. Pick or upload a skin and save.
 3. Press Play, then press F5 in the game to see it.
 
-## Limits in 0.2.0
+## New in 0.2.1
+
+- Palworld mode shows Steve. In 0.2.0 F8 showed Palworld's own character.
+- Fixed: Palworld's memory grew by about 1 GB a minute while Minecraft was linked. A long session could run the PC out of memory. Update if you play 0.2.0.
+- Fixed: progress in the Minecraft world could be lost when Palworld closed first. The world now saves every 45 seconds, and Minecraft closes by itself when Palworld is gone.
+- Kills as Steve give Palworld experience. A message tells you when your character levels up.
+- A kit that gained items in an update tops itself up for existing players.
+
+## Limits in 0.2.1
 
 - Single player.
 - DirectX 11 only. Remove `-dx12` from Palworld's Steam launch options if you added it.
@@ -57,6 +74,9 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 - Nights are cold. Hold a torch, stand by a fire or wear leather.
 - Your Palworld character stays hidden and follows Steve. If a single blow kills it outright, press F8 and respawn in Palworld.
 - Chests, Pal Spheres and Palworld menus need F8 first.
+- Palworld's defeat screen shows its own character lying there. Steve is back after you respawn.
+- Steve is wider than Palworld's character, so he covers more of an over-the-shoulder conversation shot.
+- Riding, gliding, guns, raids and boss towers are untested in Palworld mode.
 
 ## Credits
 

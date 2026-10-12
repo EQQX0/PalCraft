@@ -47,3 +47,28 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
 - 2026-10-12 0.2.0 published on the creator's word ("Publish"); Melty confirmed it live at 2026-10-11 21:56 UTC. Two screenshots added (third person, survival HUD), tagline updated. The two extra mods wait for the authors' permission; planned for 0.2.1.
 - 2026-10-12 Creator asked again to put the two mods in with credit and CurseForge links. Not bundled (no permission from the authors; credit does not replace it). Listing description rewritten for 0.2.0 with an Optional add-ons section naming both authors and linking their CurseForge pages; same section in README for 0.2.1. Both mods start beside PalCraft in the dev client (title screen only).
 - 2026-10-12 Creator: drop the optional add-ons section, add a how-to for mods and skins. Listing description and README now carry 'Add your own mods' and 'Change your skin'; the two mods are no longer named anywhere on the page.
+- 2026-10-12 0.2.1. Played Palworld's opening as Steve in Palworld mode (F8) and fixed what broke:
+  - LEAK: UE4SS 3.0.1 takes a registry reference (luaL_ref) to every table passed as an out parameter and never
+    frees it. LineTraceSingle's hit table kept 3,016 bytes per call; with the terrain scan that was 23 MB/s,
+    81 GB of Lua after 80 minutes, and the PC ran out of commit. 0.2.0 has it. Fix: util.release(t) after each
+    such call (registry[k] = registry[3]; registry[3] = k, as luaL_unref does). Lua now sits at 17-32 MB.
+    Self-check memory-steady guards it. Measure with tools/palmem.sh and collectgarbage('count').
+  - Palworld's dialogue camera (BP_PalIncidentCamera) works out its place from the player's camera and landed
+    3 km away while our CameraActor was the view target. Palworld mode now leaves the pawn as view target and
+    poses pawn.FollowCamera directly (SetAbsolute + K2_SetWorldLocationAndRotation); the arm's wish is read from
+    CameraBoom:GetSocketTransform('SpringEndpoint'). CameraBoom.TargetArmLength is reset by Palworld each tick.
+  - Steve vanished after a long move in Palworld mode: the server tracks chunks from client move packets and
+    there are none there. HostBodyServer calls getChunkSource().move(player).
+  - Palworld's UI drew under the Minecraft layers: composite right after the first back-buffer draw (ui_order).
+  - Crash 0xe06d7363 in UE4SS during a run of 60 dev console calls: the console's LoopAsync ran Lua beside the
+    frame hook. The console now runs inside the frame hook while it is alive. Release builds stop their only
+    LoopAsync once the hook is in.
+  - Never again: GenerateSDK() and guessed native signatures (AddItem_ServerInternal...) crash Palworld.
+    UFunction parameter reflection is not available in UE4SS 3.0.1 Lua; BP classes do support ForEachFunction.
+  - Useful calls: PalUtility:GiveExpToAroundPlayerCharacter(ctx, FVector, radius, exp, bool),
+    cp:SetHP({Value = hp*1000}), inv:CountItemNum(FName), pawn:K2_SetActorLocation(loc, false, {}, true).
+  - Melty switches the loader off (dwmapi.dll -> .melty-off) whenever Palworld exits; tools/pal_up.sh puts it
+    back for dev runs. tools/pal_dev.sh starts Palworld and clicks into the world.
+  - Verified by play in Palworld mode: statue + fast travel unlock, NPC talk, survival guide, tech tree, build
+    menu, workbench, crafting, Pal Sphere throw and capture, summon, cold, defeat, respawn map, F8 both ways.
+    Not tested: riding, gliding, guns, raids, towers, swimming pose.

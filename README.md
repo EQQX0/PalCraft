@@ -12,13 +12,14 @@ should be.
 
 - Walk, sprint, jump and swim on Palworld's terrain with Minecraft movement.
 - Place and break blocks anywhere on the islands. Build a cobblestone hut next to a Lamball.
-- Hit Pals with a sword, shoot them with a bow, or light TNT beside them. Their Palworld health drops.
+- Hit Pals with a sword, shoot them with a bow, or light TNT beside them. Their Palworld health drops, and a
+  kill gives your Palworld character experience.
 - Take damage. You play in survival, and a Pal that hurts your Palworld character hurts Steve.
 - Wear armor. A Pal's hit goes through Minecraft's armor, toughness, Protection and shield rules.
 - Dig Palworld's ground, cliffs and trees for materials, hunt Pals for meat and leather, farm, craft and smelt.
 - Press **F5** for third person. You see Steve standing in Palworld.
-- Press **F8** to hand the keyboard and mouse to Palworld for menus, catching and base work. Press **F8**
-  again to go back to Minecraft.
+- Press **F8** for Palworld mode: catch Pals, build a base, craft, talk to people and fast travel, with Steve
+  as your character. Press **F8** again to go back to Minecraft.
 
 You start in survival with a kit: iron sword, bow and 64 arrows, iron pickaxe, cobblestone, oak planks, glass,
 TNT, flint and steel, cooked beef, torches, ladders, two oak doors, two water buckets, wheat seeds, oak
@@ -66,6 +67,14 @@ left, red for heat on the right. The green line marks the range your Palworld cl
 gauge blinks, frost creeps over the screen in the cold, and you lose health. A campfire, a fire or lava within
 five blocks warms you by two steps. A torch nearby or in your hand gives one, and so does a piece of leather
 armor (two for the full set). Standing in water cools you by one on a hot day.
+
+## Palworld mode
+
+Press **F8** and Palworld takes the keyboard and mouse. Its rules, its HUD and its menus are yours, and Steve stays on screen as your character, walking, crouching and swinging where Palworld's own would. Press **F8** again for Minecraft's controls.
+
+Played this way so far: the fast travel statue, the first quests, talking to the islander, the tech tree, the build menu, a workbench, a pickaxe, Pal Spheres, catching a Chikipi, summoning it, the cold at night, defeat, the respawn map and respawning.
+
+The two modes keep separate health. In Palworld mode Palworld's health bar is the one that counts, and nothing in Minecraft hurts Steve.
 
 ## What you need
 
@@ -115,16 +124,27 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 
 | Key | When | Does |
 |-----|------|------|
-| F8 | Minecraft has control | Hands keyboard and mouse to Palworld |
+| F8 | Minecraft has control | Palworld mode: Palworld takes keyboard and mouse, Steve stays on screen |
 | F8 | Palworld has control | Hands them back to Minecraft |
 | F5 | Minecraft has control | Cycles first person, third person and front view |
 | Hold attack | Aiming at Palworld's world | Digs it for materials |
 
 Every other key is Minecraft's own.
 
-## Limits in 0.2.0
+## New in 0.2.1
 
-- Single player. The bridge has room for co-op and 0.2.0 does not use it.
+- Palworld mode shows Steve. In 0.2.0 F8 showed Palworld's own character.
+- Fixed: Palworld's memory grew by about 1 GB a minute while Minecraft was linked. UE4SS 3.0.1 keeps every
+  table a script passes as an out parameter, and each terrain ray passed one. PalCraft now gives them back.
+- Fixed: progress in the Minecraft world could be lost when Palworld closed first. The world saves every 45
+  seconds, and Minecraft closes by itself 20 seconds after Palworld is gone.
+- Kills as Steve give Palworld experience, with a message when the character levels up.
+- A kit that gained items in an update tops itself up for existing players.
+- Palworld's menus and prompts draw over Minecraft's blocks and over Steve.
+
+## Limits in 0.2.1
+
+- Single player. The bridge has room for co-op and 0.2.1 does not use it.
 - DirectX 11 only. Remove `-dx12` from Palworld's Steam launch options if you added it.
 - Minecraft's picture crosses to Palworld through main memory. PalCraft starts at the sharpest size under 4.2
   megapixels and steps down a size if Minecraft drops below 70 frames a second. On a 1440p screen that means
@@ -136,8 +156,11 @@ Every other key is Minecraft's own.
 - Your Palworld character stays hidden and follows Steve. PalCraft refills its health while Steve lives, so a
   hit costs Steve hearts and leaves the character alive. If a single blow kills the character outright, press
   F8 and respawn in Palworld.
-- The G key asks Palworld to interact, and 0.2.0 answers "unsupported". Use F8 for chests, Pal Spheres and
+- The G key asks Palworld to interact, and 0.2.1 answers "unsupported". Use F8 for chests, Pal Spheres and
   menus.
+- Palworld's defeat screen shows its own character lying there. Steve is back after you respawn.
+- Steve is wider than Palworld's character, so he covers more of an over-the-shoulder conversation shot.
+- Riding, gliding, guns, raids and boss towers are untested in Palworld mode.
 - A passive Pal may ignore your first hits and keep grazing.
 
 ## How it works
@@ -171,7 +194,7 @@ cd mc && gradlew.bat build
 python tools/package.py
 ```
 
-`tools/package.py` writes `dist/PalCraft-0.2.0.zip` (the Palworld mod) and `dist/PalCraft-Minecraft-0.2.0.zip`
+`tools/package.py` writes `dist/PalCraft-0.2.1.zip` (the Palworld mod) and `dist/PalCraft-Minecraft-0.2.1.zip`
 (Prism Launcher with the PalCraft instance). You need llvm-mingw and JDK 21 or newer on your PATH. The script
 expects the Prism Launcher portable zip, the Fabric API jar and the AppleSkin jar in `.tools/dl/`.
 
