@@ -20,7 +20,13 @@ public final class Tune {
 	/** Palworld mode: Steve is drawn with at least this much block light, so Palworld's night does not turn him into a silhouette (level) */
 	public static final double BODY_MIN_LIGHT = 9.0;
 	/** Palworld mode: with the camera closer to Steve than this (a wall behind it), Steve is not drawn (m) */
-	public static final double BODY_NEAR_HIDE_M = 1.25;
+	public static final double BODY_NEAR_HIDE_M = 1.6;
 	/** and he is drawn again once it is this far away (m) */
-	public static final double BODY_NEAR_SHOW_M = 1.5;
+	public static final double BODY_NEAR_SHOW_M = 1.9;
+	/** Palworld's inventory screen: the middle of its character preview lies this far right of the middle of the screen (screen heights) */
+	public static final double PREVIEW_CENTER_X = 0.139;
+	/** and the preview reaches from this far down the screen (screen heights) */
+	public static final double PREVIEW_TOP = 0.27;
+	/** to this far down (screen heights) */
+	public static final double PREVIEW_BOTTOM = 0.8;
 }

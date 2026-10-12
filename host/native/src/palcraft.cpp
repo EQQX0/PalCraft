@@ -560,6 +560,7 @@ static ID3D11SamplerState* g_sampLinear = nullptr;
 static ID3D11BlendState* g_blend = nullptr;
 static ID3D11BlendState* g_blendOff = nullptr;
 static ID3D11RasterizerState* g_raster = nullptr;
+static ID3D11RasterizerState* g_rasterCut = nullptr;  // the same, cut to the scissor rectangle
 static ID3D11DepthStencilState* g_dss = nullptr;
 
 // Minecraft's layers: two sets, so a frame torn by the writer is never shown.
@@ -625,6 +626,8 @@ static bool init_pipeline() {
     r.FillMode = D3D11_FILL_SOLID;
     r.CullMode = D3D11_CULL_NONE;
     r.DepthClipEnable = TRUE;
+    D3D11_RASTERIZER_DESC rc = r;
+    rc.ScissorEnable = TRUE;
     D3D11_DEPTH_STENCIL_DESC ds = {};
     ds.DepthEnable = FALSE;
     ds.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ZERO;
@@ -632,6 +635,7 @@ static bool init_pipeline() {
     return SUCCEEDED(g_devc->CreateBuffer(&bd, nullptr, &g_cb)) && SUCCEEDED(g_devc->CreateSamplerState(&sd, &g_sampPoint)) &&
            SUCCEEDED(g_devc->CreateSamplerState(&sl, &g_sampLinear)) && SUCCEEDED(g_devc->CreateBlendState(&b, &g_blend)) &&
            SUCCEEDED(g_devc->CreateBlendState(&bo, &g_blendOff)) && SUCCEEDED(g_devc->CreateRasterizerState(&r, &g_raster)) &&
+           SUCCEEDED(g_devc->CreateRasterizerState(&rc, &g_rasterCut)) &&
            SUCCEEDED(g_devc->CreateDepthStencilState(&ds, &g_dss));
 }
 
@@ -1025,6 +1029,63 @@ static void composite(const LuaView& lua, UINT bbW, UINT bbH) {
     }
 }
 
+// System "menu_steve": Palworld's inventory screen is up, and Minecraft has drawn Steve into its HUD layer
+// where Palworld's own character preview was. The layers went in before the interface, so the screen covers
+// him: that part of the HUD layer goes in once more, over the interface.
+static void composite_over(UINT bbW, UINT bbH) {
+    if (!g_haveFrame || !g_vs || !mc_alive()) return;
+    if (!at<uint32_t>(g_shm, PC_OFF_BODY + PC_BODY_PREVIEW)) return;
+    float part[4];
+    memcpy(part, g_shm + PC_OFF_BODY + PC_BODY_PREVIEW_RECT, sizeof(part));
+    for (float v : part)
+        if (!(v >= 0.0f && v <= 1.0f)) return;
+    if (!(part[2] > part[0] && part[3] > part[1])) return;
+    ID3D11Texture2D* bb = nullptr;
+    if (FAILED(g_sc->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&bb))) return;
+    D3D11_TEXTURE2D_DESC bd;
+    bb->GetDesc(&bd);
+    ID3D11RenderTargetView* bbRtv = nullptr;
+    if (bd.SampleDesc.Count != 1 || FAILED(g_devc->CreateRenderTargetView(bb, nullptr, &bbRtv))) {
+        bb->Release();
+        return;
+    }
+    SavedState saved;
+    save_state(saved);
+    g_internal = true;
+    Params p = {};  // no world, no hand, no relight: the HUD layer alone
+    D3D11_MAPPED_SUBRESOURCE m;
+    if (SUCCEEDED(g_ctx->Map(g_cb, 0, D3D11_MAP_WRITE_DISCARD, 0, &m))) {
+        memcpy(m.pData, &p, sizeof(p));
+        g_ctx->Unmap(g_cb, 0);
+    }
+    FLOAT bf[4] = {0, 0, 0, 0};
+    ID3D11SamplerState* samps[2] = {g_sampPoint, g_sampLinear};
+    g_ctx->IASetInputLayout(nullptr);
+    g_ctx->IASetPrimitiveTopology(D3D11_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
+    g_ctx->VSSetShader(g_vs, nullptr, 0);
+    g_ctx->GSSetShader(nullptr, nullptr, 0);
+    g_ctx->HSSetShader(nullptr, nullptr, 0);
+    g_ctx->DSSetShader(nullptr, nullptr, 0);
+    g_ctx->OMSetDepthStencilState(g_dss, 0);
+    g_ctx->PSSetSamplers(0, 2, samps);
+    g_ctx->PSSetConstantBuffers(0, 1, &g_cb);
+    fullscreen(bbRtv, bd.Width, bd.Height);
+    D3D11_RECT cut = {(LONG)(part[0] * bd.Width), (LONG)(part[1] * bd.Height), (LONG)(part[2] * bd.Width),
+                      (LONG)(part[3] * bd.Height)};
+    g_ctx->RSSetState(g_rasterCut);
+    g_ctx->RSSetScissorRects(1, &cut);
+    g_ctx->PSSetShader(g_ps, nullptr, 0);
+    g_ctx->OMSetBlendState(g_blend, bf, 0xffffffff);
+    ID3D11ShaderResourceView* srvs[7] = {};
+    srvs[2] = g_texSrv[g_front][2];
+    g_ctx->PSSetShaderResources(0, 7, srvs);
+    g_ctx->Draw(3, 0);
+    restore_state(saved);
+    g_internal = false;
+    bbRtv->Release();
+    bb->Release();
+}
+
 // Development: what near plane would make the depth at the screen centre agree with Lua's line trace?
 static void calibrate_near(const LuaView& lua) {
     static ID3D11Texture2D* staging = nullptr;
@@ -1190,6 +1251,7 @@ static void on_present(IDXGISwapChain* sc, UINT flags) {
     adopt_depth(bbW, bbH);
     // No draw reached the back buffer before Present (an unusual frame): the layers go in now, over the interface.
     if (!g_failed && !g_midDone) composite(lua, bbW, bbH);
+    if (!g_failed) composite_over(bbW, bbH);
     g_midDone = false;
     g_bbDraws = 0;
     {

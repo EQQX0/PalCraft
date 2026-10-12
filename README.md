@@ -72,7 +72,9 @@ armor (two for the full set). Standing in water cools you by one on a hot day.
 
 Press **F8** and Palworld takes the keyboard and mouse. Its rules and its menus are yours, and Steve stays on screen as your character, walking, crouching, swimming, gliding and swinging where Palworld's own would. Press **F8** again for Minecraft's controls.
 
-The HUD stays Minecraft's. The hearts show your Palworld character's health and the hunger bar its stomach, next to your hotbar, armor and temperature gauge. Palworld keeps what Minecraft has no picture for: prompts, the compass, your Pal party, the tool panel and boss bars. Minecraft's HUD steps back while a Palworld menu, build mode, a conversation, a cutscene or the defeat screen is up.
+The HUD stays Minecraft's. The hearts show your Palworld character's health, the hunger bar its stomach and the experience bar its level. The hotbar holds Palworld's tools as Minecraft items, in the slots Palworld's number keys pick: a stone pickaxe for the Stone Pickaxe, a bow for a bow, a crossbow for a gun. Your Pal Spheres sit in the last slot with their count. A tool that takes rounds shows the rounds loaded on its slot and the rounds you carry beside the hotbar. Minecraft's crosshair marks the point Palworld aims at.
+
+Open Palworld's inventory and Steve stands in it. Palworld keeps what Minecraft has no picture for: prompts, the compass, your Pal party and boss bars. Minecraft's HUD steps back while another Palworld menu, build mode, a conversation, a cutscene or the defeat screen is up.
 
 Played this way so far: the fast travel statue, the first quests, talking to the islander, the tech tree, the build menu, a workbench, a pickaxe, mining, fighting Lamballs, Pal Spheres, catching a Chikipi, summoning it, cloth and a parachute, gliding, swimming, the cold at night, the Rayne Syndicate Tower fight, defeat, the respawn map and respawning.
 
@@ -141,8 +143,11 @@ Every other key is Minecraft's own.
 - Fixed: progress in the Minecraft world could be lost when Palworld closed first. The world saves every 45
   seconds, and Minecraft closes by itself 20 seconds after Palworld is gone.
 - Fixed: the tool the Palworld character holds floated on Steve's chest. The mod hides it with the character.
-  Steve's hands are empty in Palworld mode, and Palworld's tool panel shows the tool in use.
-- Palworld mode keeps Minecraft's HUD: hearts for your character's health, hunger for its stomach, with your hotbar, armor and temperature gauge. Palworld's own health, hunger and temperature gauges step aside.
+  Steve's hands are empty in Palworld mode, and the hotbar shows the tool in use.
+- Palworld mode keeps Minecraft's HUD: hearts for your character's health, hunger for its stomach, the experience bar for its level, with your armor and temperature gauge. Palworld's own gauges, level display and tool panel step aside.
+- The hotbar in Palworld mode holds Palworld's tools as Minecraft items, with your Pal Spheres and their count in the last slot.
+- Palworld's inventory screen shows Steve in place of its own character.
+- Minecraft's crosshair shows behind Steve too: in F5 third person, and in Palworld mode at the point Palworld aims at.
 - Fixed: mining and melee hit nothing in Palworld mode. The hidden character's bones stood still, so its tool swept through nothing.
 - Fixed: the pickaxe stowed on the character's back showed on Steve while he aimed a Pal Sphere.
 - Steve falls on Palworld's defeat screen and gets up when you respawn.
@@ -168,8 +173,8 @@ Every other key is Minecraft's own.
   F8 and respawn in Palworld.
 - The G key asks Palworld to interact, and 0.2.1 answers "unsupported". Use F8 for chests, Pal Spheres and
   menus.
-- In Palworld mode the hotbar shows Steve's Minecraft items. Palworld's tools do the work there, and the number keys go to Palworld.
-- Palworld's inventory screen shows its own character in the preview.
+- In Palworld mode the number keys pick Palworld's tools. Steve's own items wait in his inventory until you press F8.
+- Steve stands 1.9 m tall and 0.9 m wide. When a wall pushes Palworld's camera close, he covers more of the picture than Palworld's character would.
 - Steve is wider than Palworld's character, so he covers more of an over-the-shoulder conversation shot.
 - Riding, bows, guns and raids are untested in Palworld mode.
 - A passive Pal may ignore your first hits and keep grazing.

@@ -232,12 +232,62 @@ public final class BridgeShm {
 		int base = Protocol.OFF_BODY;
 		out[0] = buf.getFloat(base + Protocol.B_HEALTH);
 		out[1] = buf.getFloat(base + Protocol.B_STOMACH);
+		if (out.length >= 4) {
+			out[2] = buf.getFloat(base + Protocol.B_EXP_FRAC);
+			out[3] = buf.getInt(base + Protocol.B_LEVEL);
+		}
 		return buf.getInt(base + Protocol.B_VALID) == 1;
 	}
 
 	/** Palworld shows a shot or screen of its own. */
 	public boolean hudAway() {
 		return buf.getInt(Protocol.OFF_BODY + Protocol.B_HUD_AWAY) != 0;
+	}
+
+	/** Where Steve stands in Palworld's inventory screen, in parts of the picture from its top left. All 0 = nowhere. */
+	public void writePreviewRect(float left, float top, float right, float bottom) {
+		int at = Protocol.OFF_BODY + Protocol.B_PREVIEW_RECT;
+		buf.putFloat(at, left);
+		buf.putFloat(at + 4, top);
+		buf.putFloat(at + 8, right);
+		buf.putFloat(at + 12, bottom);
+	}
+
+	/** Palworld's inventory screen shows its character preview. */
+	public boolean preview() {
+		return buf.getInt(Protocol.OFF_BODY + Protocol.B_PREVIEW) != 0;
+	}
+
+	/** out: the tool slot in hand, spheres carried, rounds loaded (-1 = the tool takes none), rounds carried. */
+	public boolean readLoadout(int[] out) {
+		int base = Protocol.OFF_BODY;
+		out[0] = buf.getInt(base + Protocol.B_TOOL_SLOT);
+		out[1] = buf.getInt(base + Protocol.B_BALL_COUNT);
+		out[2] = buf.getInt(base + Protocol.B_AMMO);
+		out[3] = buf.getInt(base + Protocol.B_AMMO_SPARE);
+		return buf.getInt(base + Protocol.B_VALID) == 1;
+	}
+
+	/** Palworld's names of the tools in its weapon slots, joined by |. */
+	public String loadout() {
+		return text(Protocol.OFF_BODY + Protocol.B_LOADOUT, Protocol.B_LOADOUT_LEN);
+	}
+
+	/** Palworld's item id of the selected sphere ("" if it carries none). */
+	public String ball() {
+		return text(Protocol.OFF_BODY + Protocol.B_BALL, Protocol.B_BALL_LEN);
+	}
+
+	private String text(int at, int size) {
+		byte[] b = new byte[size];
+		int n = 0;
+		for (; n < size - 1; n++) {
+			b[n] = buf.get(at + n);
+			if (b[n] == 0) {
+				break;
+			}
+		}
+		return new String(b, 0, n, java.nio.charset.StandardCharsets.UTF_8);
 	}
 
 	/** out: temperature, heat resist, cold resist. False while Palworld has not reported them. */

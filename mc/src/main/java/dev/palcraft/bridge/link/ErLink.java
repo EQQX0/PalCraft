@@ -212,6 +212,30 @@ public final class ErLink {
 		return shm != null && alive() && shm.hudAway();
 	}
 
+	public synchronized void writePreviewRect(float left, float top, float right, float bottom) {
+		if (shm != null) {
+			shm.writePreviewRect(left, top, right, bottom);
+		}
+	}
+
+	/** Palworld's inventory screen shows its character preview. */
+	public synchronized boolean preview() {
+		return shm != null && alive() && shm.preview();
+	}
+
+	/** out: the tool slot in hand, spheres carried, rounds loaded (-1 = none), rounds carried. */
+	public synchronized boolean readLoadout(int[] out) {
+		return shm != null && alive() && shm.readLoadout(out);
+	}
+
+	public synchronized String loadout() {
+		return shm != null && alive() ? shm.loadout() : "";
+	}
+
+	public synchronized String ball() {
+		return shm != null && alive() ? shm.ball() : "";
+	}
+
 	/** The action Palworld offers right now ("" if none). */
 	public synchronized String hostPrompt() {
 		return shm != null ? shm.hostPrompt() : "";

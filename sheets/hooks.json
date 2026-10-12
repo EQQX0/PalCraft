@@ -13,6 +13,8 @@
     ["draw_idx",     "native", "vtable hook",    "ID3D11DeviceContext::DrawIndexed",           12, "ui_order",    "same, for indexed draws"],
     ["draw_inst",    "native", "vtable hook",    "ID3D11DeviceContext::DrawInstanced",         21, "ui_order",    "same, for instanced draws"],
     ["viewports",    "native", "vtable hook",    "ID3D11DeviceContext::RSSetViewports",        44, "frame_tag",   "sees the frame tag and the view rectangle of the scene"],
-    ["set_cursor", "native", "inline hook", "user32!SetCursor", "-", "cursor", "turns Palworld's pointer changes into 'no pointer' while Minecraft holds the mouse"]
+    ["set_cursor", "native", "inline hook", "user32!SetCursor", "-", "cursor", "turns Palworld's pointer changes into 'no pointer' while Minecraft holds the mouse"],
+    ["build_screen", "lua", "new object", "/Game/Pal/Blueprint/UI/UserInterface/InGame/Construction/WBP_IngameConstruction.WBP_IngameConstruction_C", "-", "hud_swap", "hears of each build-mode screen Palworld makes; it makes the first when the player first builds"],
+    ["menu_preview", "lua", "new object", "/Game/Pal/Blueprint/UI/SceneCaptureWidget/WBP_PalPlayerInframeRender.WBP_PalPlayerInframeRender_C", "-", "menu_steve", "hears of each character preview Palworld makes for its inventory screen"]
   ]
 }

@@ -200,6 +200,15 @@ P.Body = {
     ["killExp"] = { 0x28, "<I4", 4 },
     ["health"] = { 0x2C, "<f", 4 },
     ["hudAway"] = { 0x30, "<I4", 4 },
+    ["expFrac"] = { 0x34, "<f", 4 },
+    ["toolSlot"] = { 0x38, "<i4", 4 },
+    ["ballCount"] = { 0x3C, "<I4", 4 },
+    ["ammo"] = { 0x40, "<i4", 4 },
+    ["ammoSpare"] = { 0x44, "<I4", 4 },
+    ["preview"] = { 0x48, "<I4", 4 },
+    ["loadout"] = { 0x4C, "<c96", 96 },
+    ["ball"] = { 0xAC, "<c20", 20 },
+    ["previewRect"] = { 0xC0, "<ffff", 16 },
 }
 P.state = {
     CAMERA_VALID = 0x001,
@@ -319,6 +328,8 @@ P.tune = {
 }
 P.hook = {
     tick = "/Game/Pal/Blueprint/Controller/BP_PalPlayerController.BP_PalPlayerController_C:ReceiveTick",
+    build_screen = "/Game/Pal/Blueprint/UI/UserInterface/InGame/Construction/WBP_IngameConstruction.WBP_IngameConstruction_C",
+    menu_preview = "/Game/Pal/Blueprint/UI/SceneCaptureWidget/WBP_PalPlayerInframeRender.WBP_PalPlayerInframeRender_C",
 }
 P.listing = {
     slug = "palcraft-6",

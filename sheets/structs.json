@@ -169,6 +169,15 @@
     ["Body", "level", "0x24", "i32", 1, "lua", "B_LEVEL", "the Palworld character's level"],
     ["Body", "killExp", "0x28", "u32", 1, "lua", "B_KILL_EXP", "Palworld experience Steve's kills have earned this session, running total"],
     ["Body", "health", "0x2C", "f32", 1, "lua", "B_HEALTH", "the Palworld character's health, 0..1"],
-    ["Body", "hudAway", "0x30", "u32", 1, "lua", "B_HUD_AWAY", "1 while Palworld shows a shot, a menu or a screen of its own: Minecraft holds its HUD back"]
+    ["Body", "hudAway", "0x30", "u32", 1, "lua", "B_HUD_AWAY", "1 while Palworld shows a shot, a menu or a screen of its own: Minecraft holds its HUD back"],
+    ["Body", "expFrac", "0x34", "f32", 1, "lua", "B_EXP_FRAC", "how far the character is towards its next Palworld level, 0..1"],
+    ["Body", "toolSlot", "0x38", "i32", 1, "lua", "B_TOOL_SLOT", "which entry of loadout is in the character's hand, from 0"],
+    ["Body", "ballCount", "0x3C", "u32", 1, "lua", "B_BALL_COUNT", "how many of the selected Pal Sphere it carries"],
+    ["Body", "ammo", "0x40", "i32", 1, "lua", "B_AMMO", "rounds loaded in the tool in hand, -1 = it takes none"],
+    ["Body", "ammoSpare", "0x44", "u32", 1, "lua", "B_AMMO_SPARE", "rounds for it in the inventory"],
+    ["Body", "preview", "0x48", "u32", 1, "lua", "B_PREVIEW", "1 while Palworld's inventory screen shows its character preview: Minecraft draws Steve there"],
+    ["Body", "loadout", "0x4C", "char", 96, "lua", "B_LOADOUT", "Palworld class names of the tools in its weapon slots, in slot order, joined by |, NUL-terminated"],
+    ["Body", "ball", "0xAC", "char", 20, "lua", "B_BALL", "item id of the selected Pal Sphere, NUL-terminated"],
+    ["Body", "previewRect", "0xC0", "f32", 4, "mc", "B_PREVIEW_RECT", "where Minecraft has drawn Steve for Palworld's inventory screen, in parts of the picture from its top left: left, top, right, bottom; all 0 = nowhere"]
   ]
 }

@@ -156,6 +156,17 @@ public final class Protocol {
 	public static final int B_KILL_EXP = 0x28;
 	public static final int B_HEALTH = 0x2C;
 	public static final int B_HUD_AWAY = 0x30;
+	public static final int B_EXP_FRAC = 0x34;
+	public static final int B_TOOL_SLOT = 0x38;
+	public static final int B_BALL_COUNT = 0x3C;
+	public static final int B_AMMO = 0x40;
+	public static final int B_AMMO_SPARE = 0x44;
+	public static final int B_PREVIEW = 0x48;
+	public static final int B_LOADOUT = 0x4C;
+	public static final int B_LOADOUT_LEN = 96;
+	public static final int B_BALL = 0xAC;
+	public static final int B_BALL_LEN = 20;
+	public static final int B_PREVIEW_RECT = 0xC0;
 
 	// Ray queries (ErmcRayHeader), relative to OFF_RAYS
 	public static final int OFF_RAYS = 0x100000;

@@ -118,3 +118,27 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
       Palworld mode. GameRendererMixin answers shouldRenderBlockOutline with false there.
     - Driving an installed build: F8 goes to Minecraft's input window (tools/mcdrive.py). Sent to Palworld's
       window in Minecraft mode it only hands focus back to Minecraft.
+  - "Debug all issues", then "In inventory show steve" and "Add Minecraft crosshair on f5 too":
+    - Hotbar (system loadout_hotbar, sheets/tools.json): hud.lua reads LoadoutSelectorComponent
+      (currentItemSlotIndex, spawnedWeaponsArray, NowEquipBallItemID) and the inventory's CountItemNum, and
+      writes class names into Body.loadout. LoadoutHud maps them to Minecraft items, first match wins.
+      While a sphere is aimed currentItemSlotIndex is the slot after the weapon slots (4 with 4 unlocked).
+    - Experience bar: Body.level and Body.expFrac from PalExpDatabase:GetTotalExp(level, true).
+    - Inventory Steve (system menu_steve): the compositor puts Minecraft's layers in before Palworld draws
+      its interface, so a doll in the HUD layer sat blurred under the menu. Minecraft now writes
+      Body.previewRect and the native side draws that part of the HUD layer once more at Present
+      (composite_over, scissor rectangle). hud.lua fades WBP_PalPlayerInframeRender under CanvasPanelChara
+      and raises Body.preview only while that widget and its parents are visible, so other tabs drop it.
+    - Crosshair: GuiMixin redirects CameraType.isFirstPerson inside Gui.renderCrosshair. Checked against a
+      Pal Sphere throw: Palworld's aim marks sit on Minecraft's crosshair.
+    - Close camera: Steve is 1.875 blocks tall and 0.94 wide (1.95 with a helmet), Palworld's character
+      about 1.7 by 0.45. At 4.3 m he measures right against ProjectWorldLocationToScreen. A wall at 2.4 m
+      makes him a quarter of the picture wide; body_near_hide_m 1.25 -> 1.6, body_near_show_m 1.5 -> 1.9.
+    - Melty's needs-vc-runtime finding: Prism's portable build links the Visual C++ runtime and does not
+      carry it. Palworld needs the same runtime and Steam installs it with the game, so every player who
+      can start Palworld has it. Left as it is.
+    - Palworld's AddItem_ServerInternal for test gear: refused by the permission check, and not retried.
+      Bows, guns, riding and raids stay untested until play reaches them.
+    - One Palworld crash (access violation inside UE4SS, game thread) 46 s after a dev reload of the new
+      hud.lua while Minecraft was linking. Not seen again in the sessions after it; cause unknown.
+    - tools/shmdump.py prints the newer Body fields wrong. Read them raw with struct.

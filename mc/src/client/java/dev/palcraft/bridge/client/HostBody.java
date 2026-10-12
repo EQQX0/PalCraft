@@ -33,12 +33,18 @@ public final class HostBody {
 	private static double lastX, lastZ;
 	private static Pose pose = Pose.STANDING;
 	private static boolean tooClose;
-	private static final float[] VITALS = new float[2];
+	private static final float[] VITALS = new float[4];
 	private static boolean mirrored;
+	private static boolean preview;
 
 	/** True while Steve's body follows the Palworld character. */
 	public static boolean active() {
 		return active;
+	}
+
+	/** True while Palworld's inventory screen is up: Steve stands in it where its character preview was. */
+	public static boolean previewing() {
+		return active && preview;
 	}
 
 	/** True while a wall holds the camera so close that Steve would fill the picture. */
@@ -68,7 +74,13 @@ public final class HostBody {
 		if (want == active) {
 			if (active) {
 				// The HUD is Minecraft's in Palworld mode too, except over a shot or screen Palworld shows by itself.
-				mc.options.hideGui = savedHideGui || ErLink.get().hudAway();
+				// Its inventory screen gets Steve and nothing else (GuiMixin).
+				boolean away = ErLink.get().hudAway();
+				preview = away && ErLink.get().preview();
+				mc.options.hideGui = savedHideGui || (away && !preview);
+				if (!preview) {
+					MenuSteve.gone();
+				}
 			}
 			return;
 		}
@@ -76,6 +88,7 @@ public final class HostBody {
 		HostBodyServer.following = want;
 		haveLast = false;
 		tooClose = false;
+		preview = false;
 		pose = Pose.STANDING;
 		if (want) {
 			savedHideGui = mc.options.hideGui;
@@ -84,6 +97,7 @@ public final class HostBody {
 		} else {
 			mc.options.hideGui = savedHideGui;
 			mc.gameRenderer.setRenderHand(true);
+			MenuSteve.gone();
 			if (mc.player != null) {
 				mc.player.deathTime = 0;
 				ownVitals(mc, mc.player);
@@ -92,8 +106,9 @@ public final class HostBody {
 	}
 
 	/**
-	 * Palworld mode: the hearts and the hunger bar show the body that takes the hits and gets hungry there, the
-	 * Palworld character's. Only this client's copy of Steve changes; his own health and food wait on the server.
+	 * Palworld mode: the hearts, the hunger bar and the experience bar show the body that takes the hits, gets
+	 * hungry and levels up there, the Palworld character's. Only this client's copy of Steve changes; his own
+	 * health, food and experience wait on the server.
 	 */
 	private static void mirrorVitals(LocalPlayer p) {
 		if (!ErLink.get().readVitals(VITALS)) {
@@ -103,6 +118,8 @@ public final class HostBody {
 		p.setHealth(Math.max(0.01F, Math.min(1.0F, VITALS[0]) * p.getMaxHealth()));
 		p.getFoodData().setFoodLevel(Math.round(20.0F * Math.max(0.0F, Math.min(1.0F, VITALS[1]))));
 		p.getFoodData().setSaturation(0.0F);
+		p.experienceLevel = Math.max(0, (int) VITALS[3]);
+		p.experienceProgress = Math.max(0.0F, Math.min(1.0F, VITALS[2]));
 		mirrored = true;
 	}
 
@@ -118,6 +135,9 @@ public final class HostBody {
 			p.setHealth(Math.max(0.01F, own.getHealth()));
 			p.getFoodData().setFoodLevel(own.getFoodData().getFoodLevel());
 			p.getFoodData().setSaturation(own.getFoodData().getSaturationLevel());
+			p.experienceLevel = own.experienceLevel;
+			p.experienceProgress = own.experienceProgress;
+			p.totalExperience = own.totalExperience;
 		}
 	}
 

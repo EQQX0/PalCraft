@@ -13,6 +13,16 @@ local applied = 0        -- the heat level this mod has given Palworld
 local appliedTo
 local exposed = false
 local nextAt, settledAt = 0, 0
+local EXPDB
+
+-- How far the character is towards its next level, for Minecraft's experience bar in Palworld mode.
+local function progress(ind, level)
+    if not (EXPDB and EXPDB:IsValid()) then EXPDB = FindFirstOf("PalExpDatabase") end
+    if not (EXPDB and EXPDB:IsValid()) then return 0 end
+    local from, to = EXPDB:GetTotalExp(level, true), EXPDB:GetTotalExp(level + 1, true)
+    if to <= from then return 0 end
+    return math.max(0, math.min(1, (ind:GetExp() - from) / (to - from)))
+end
 
 -- Freezing or burning: the temperature is past what the character's clothes take.
 function M.exposed()
@@ -69,8 +79,12 @@ function M.tick(env)
     local info = comp.TemperatureInfo
     local t, heat, cold = info.CurrentTemperature, info.CurrentResistRank_Heat, info.CurrentResistRank_Cold
     exposed = t > heat or t < -cold
-    local level = 0
-    pcall(function() level = cp.IndividualParameter:GetLevel() end)
+    local level, exp = 0, 0
+    pcall(function()
+        level = cp.IndividualParameter:GetLevel()
+        exp = progress(cp.IndividualParameter, level)
+    end)
+    shm.put(OFF, B.expFrac, exp)
     shm.write(OFF + B.temperature[1], string.pack("<i4i4i4fI4i4I4", t, heat, cold, stomach, 1, level, env.killExp or 0))
 end
 

@@ -98,6 +98,7 @@ public class ErBridgeClient implements ClientModInitializer {
 			}
 			WorldBootstrap.tick(mc);
 			HostBody.tick(mc);
+			LoadoutHud.tick(mc);
 			Unstuck.tick(mc);
 			GatherClient.tick(mc);
 			BodyHud.tick(mc);
