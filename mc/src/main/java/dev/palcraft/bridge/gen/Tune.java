@@ -19,4 +19,8 @@ public final class Tune {
 	public static final double AUTOSAVE_S = 45.0;
 	/** Palworld mode: Steve is drawn with at least this much block light, so Palworld's night does not turn him into a silhouette (level) */
 	public static final double BODY_MIN_LIGHT = 9.0;
+	/** Palworld mode: with the camera closer to Steve than this (a wall behind it), Steve is not drawn (m) */
+	public static final double BODY_NEAR_HIDE_M = 1.25;
+	/** and he is drawn again once it is this far away (m) */
+	public static final double BODY_NEAR_SHOW_M = 1.5;
 }

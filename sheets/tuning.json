@@ -32,6 +32,8 @@
     ["pal_box_min_half_m", 0.5, "m", "lua", "lowest hitbox half-height a Pal gets in Minecraft"],
     ["autosave_s", 45, "s", "mc", "the PalCraft world is saved this often while both games run"],
     ["body_min_light", 9, "level", "mc", "Palworld mode: Steve is drawn with at least this much block light, so Palworld's night does not turn him into a silhouette"],
+    ["body_near_hide_m", 1.25, "m", "mc", "Palworld mode: with the camera closer to Steve than this (a wall behind it), Steve is not drawn"],
+    ["body_near_show_m", 1.5, "m", "mc", "and he is drawn again once it is this far away"],
     ["selftest_mem_ticks", 3600, "ticks", "lua", "Melty test: Lua memory is judged after this many ticks with Minecraft linked and terrain answered"],
     ["selftest_mem_mb", 300, "MB", "lua", "and passes under this much; the out-parameter leak of 0.2.0 reached it in 15 seconds"],
     ["kill_exp_base", 18, "exp", "lua", "Palworld experience for a level 1 Pal that Steve kills"],

@@ -2,6 +2,7 @@ package dev.palcraft.bridge.client;
 
 import dev.palcraft.bridge.CoordMap;
 import dev.palcraft.bridge.HostBodyServer;
+import dev.palcraft.bridge.gen.Tune;
 import dev.palcraft.bridge.link.ErLink;
 import dev.palcraft.bridge.link.GameState;
 import dev.palcraft.bridge.link.Protocol;
@@ -29,10 +30,27 @@ public final class HostBody {
 	private static boolean haveLast;
 	private static double lastX, lastZ;
 	private static Pose pose = Pose.STANDING;
+	private static boolean tooClose;
 
 	/** True while Steve's body follows the Palworld character. */
 	public static boolean active() {
 		return active;
+	}
+
+	/** True while a wall holds the camera so close that Steve would fill the picture. */
+	public static boolean tooClose() {
+		return active && tooClose;
+	}
+
+	/** Every frame, after Steve is placed: how far the camera is from the line through his body. */
+	static void watchCamera(LocalPlayer p, Vec3 cam) {
+		if (p == null) {
+			return;
+		}
+		double dy = cam.y - Math.max(p.getY(), Math.min(p.getY() + p.getBbHeight(), cam.y));
+		double dx = cam.x - p.getX(), dz = cam.z - p.getZ();
+		double d = Math.sqrt(dx * dx + dy * dy + dz * dz);
+		tooClose = d < (tooClose ? Tune.BODY_NEAR_SHOW_M : Tune.BODY_NEAR_HIDE_M);
 	}
 
 	/** The pose Steve copies from the Palworld character. */
@@ -49,6 +67,7 @@ public final class HostBody {
 		active = want;
 		HostBodyServer.following = want;
 		haveLast = false;
+		tooClose = false;
 		pose = Pose.STANDING;
 		if (want) {
 			savedHideGui = mc.options.hideGui;

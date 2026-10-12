@@ -109,6 +109,11 @@ public final class Overlay {
 	/** F8 in the host game (reported by the DLL): bring Minecraft back on top. */
 	public static void switchToMc(Minecraft mc) {
 		if (!hostMode) {
+			// Minecraft has the controls yet Palworld's window had the keyboard (another program handed it
+			// over): F8 there takes it back.
+			if (active && window != 0L) {
+				GLFW.glfwFocusWindow(window);
+			}
 			return;
 		}
 		hostMode = false;
