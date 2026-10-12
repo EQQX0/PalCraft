@@ -30,8 +30,10 @@ function M.carry(pawn, feet, yawDeg)
     end
     hold(pawn)
     local X, Y, Z = U.to_ue(feet[1], feet[2], feet[3])
+    local swept = {}
     pawn:K2_SetActorLocationAndRotation({ X = X, Y = Y, Z = Z + halfHeight }, { Pitch = 0, Yaw = yawDeg + 180, Roll = 0 },
-        false, {}, true)
+        false, swept, true)
+    U.release(swept)
 end
 
 function M.release(pawn)

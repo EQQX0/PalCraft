@@ -22,6 +22,33 @@ function M.log(msg)
     end
 end
 
+-- UE4SS 3.0.1 takes a registry reference to every table passed as an out parameter and never gives it back,
+-- so the table and everything the call wrote into it live forever. A line trace's hit result is 3 KB and
+-- the terrain scan makes thousands a second: Palworld grew by 1.2 GB a minute and ran the PC out of memory
+-- after 80 minutes (2026-10-12). M.release(t) gives the reference back exactly as luaL_unref would: call it
+-- after every call that took t as an out parameter. t stays usable.
+local REG = debug and debug.getregistry and debug.getregistry()
+local FREE = 3 -- Lua 5.4.3 and later: head of luaL_ref's free list
+local last
+local function ref_of(t)
+    if last and rawget(REG, last) == t then return last end
+    local n = #REG
+    for k = n, math.max(FREE + 1, n - 8), -1 do
+        if rawget(REG, k) == t then return k end
+    end
+end
+function M.release(t)
+    if not REG or math.type(rawget(REG, FREE)) ~= "integer" then return end
+    local k = ref_of(t)
+    if not k then return end
+    rawset(REG, k, rawget(REG, FREE))
+    rawset(REG, FREE, k)
+    last = k
+end
+
+-- Lua memory, for the self-check and the log.
+function M.lua_mb() return collectgarbage("count") / 1024 end
+
 -- Runs fn and reports an error once per distinct message, so a broken system cannot flood the log.
 local seen = {}
 function M.guard(name, fn, ...)

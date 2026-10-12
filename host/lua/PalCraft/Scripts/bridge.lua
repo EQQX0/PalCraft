@@ -49,6 +49,7 @@ local function trace_center(pawn, pos, target)
     local hit = {}
     local ok = KSL:LineTraceSingle(pawn, { X = ex, Y = ey, Z = ez }, { X = ex + dx * s, Y = ey + dy * s, Z = ez + dz * s },
         0, false, {}, 0, hit, true, black, black, 0.0)
+    U.release(hit)
     return ok and hit.Distance / 100 or 0
 end
 
@@ -79,7 +80,7 @@ local function on_tick(pc)
         if s.name == "life" then U.guard("life", s.mod.tick, env) end
     end
 
-    local flags, pose = 0, 0
+    local flags, pose, steveShot = 0, 0, true
     local camPos, camTarget, fovY = { 0, 0, 0 }, { 0, 0, 1 }, 70
     local feet, quat = { 0, 0, 0 }, { 0, 0, 0, 1 }
     if hasPawn then
@@ -91,7 +92,16 @@ local function on_tick(pc)
             local px, py, pz = shm.field(ctrl, C.camPos)
             local tx, ty, tz = shm.field(ctrl, C.camTarget)
             local f = shm.field(ctrl, C.fovYDeg)
-            if camera.apply(pc, pawn, { px, py, pz }, { tx, ty, tz }, f, aspect, body) then
+            local shown
+            if body then
+                shown = camera.apply_body(pc, pawn, { px, py, pz }, { tx, ty, tz })
+                if not shown and camera.yielding() then
+                    shown, steveShot = camera.shot(pc, { px, py, pz }, { tx, ty, tz }, f, aspect)
+                end
+            else
+                shown = camera.apply(pc, pawn, { px, py, pz }, { tx, ty, tz }, f, aspect, false)
+            end
+            if shown then
                 pose = shm.field(ctrl, C.mcFrame)
                 camPos, camTarget, fovY = { px, py, pz }, { tx, ty, tz }, f
                 flags = flags | P.state.CAM_OVERRIDDEN
@@ -106,8 +116,12 @@ local function on_tick(pc)
             standin.release(pawn)
         end
         -- In a cutscene Palworld's camera shows its own character: Steve is not drawn there.
-        standin.hide(pawn, usable and cflags & P.ctrl.HIDE_HUNTER ~= 0 and not camera.yielding())
-        if body then
+        standin.hide(pawn, usable and cflags & P.ctrl.HIDE_HUNTER ~= 0 and (not camera.yielding() or (body and steveShot)))
+        if body and camera.yielding() then
+            -- Palworld's own shot: Minecraft draws Steve from that camera.
+            camPos, camTarget, fovY = camera.own(pc, aspect)
+            flags = flags | (U.guard("pose_flags", standin.pose_flags, pc, pawn, P.state) or 0)
+        elseif body then
             camPos, camTarget, fovY = camera.body(pc, pawn, aspect)
             flags = flags | (U.guard("pose_flags", standin.pose_flags, pc, pawn, P.state) or 0)
         elseif pose == 0 then
@@ -140,7 +154,9 @@ function M.start(runtimeDir, isDev)
     local function try_hook()
         if hooked then return end
         local ok, err = pcall(RegisterHook, P.hook.tick, function(ctx)
-            if gen == _G.PALCRAFT_GEN then U.guard("tick", on_tick, ctx:get()) end
+            if gen ~= _G.PALCRAFT_GEN then return end
+            U.guard("tick", on_tick, ctx:get())
+            if dev then U.guard("dev", require("dev").tick) end
         end)
         if ok then
             hooked = true

@@ -298,9 +298,16 @@ P.tune = {
     heat_settle_ms = 4000,
     pal_box_min_radius_m = 0.45,
     pal_box_min_half_m = 0.5,
+    selftest_mem_ticks = 3600,
+    selftest_mem_mb = 300,
     kill_exp_base = 18,
     kill_exp_power = 1.35,
     kill_exp_boss = 6,
+    body_cam_back_m = 1.6,
+    body_cam_side_m = 0.55,
+    shot_match_m = 0.3,
+    shot_match_deg = 2.5,
+    shot_miss_ticks = 20,
     kill_exp_level_lead = 4,
 }
 P.hook = {

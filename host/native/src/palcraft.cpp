@@ -238,6 +238,14 @@ static bool g_depthIsCopy = false;
 static int g_tag = -1;
 static uint64_t g_tagPresent = 0;
 
+// System "ui_order": Unreal draws the finished scene into the back buffer and then its interface on top.
+// The first draw into the back buffer each frame is that scene: the Minecraft layers go in right after it.
+static ID3D11Texture2D* g_bbTex = nullptr;  // not owned: only compared
+static bool g_bbBound = false;
+static int g_bbDraws = 0;
+static bool g_midDone = false;  // this frame's layers are already in, under the interface
+static void mid_composite();
+
 static void cands_reset() {
     for (int i = 0; i < g_candCount; i++) rel(g_cands[i].tex);
     g_candCount = 0;
@@ -293,7 +301,16 @@ static Viewports_t oViewports = nullptr;
 
 static void STDMETHODCALLTYPE hkSetTargets(ID3D11DeviceContext* c, UINT n, ID3D11RenderTargetView* const* rtvs,
                                            ID3D11DepthStencilView* dsv) {
-    if (c == g_ctx && !g_internal) g_cur = cand_for(dsv);
+    if (c == g_ctx && !g_internal) {
+        g_cur = cand_for(dsv);
+        g_bbBound = false;
+        if (g_bbTex && n && rtvs && rtvs[0]) {
+            ID3D11Resource* r = nullptr;
+            rtvs[0]->GetResource(&r);
+            g_bbBound = r == (ID3D11Resource*)g_bbTex;
+            if (r) r->Release();
+        }
+    }
     oSetTargets(c, n, rtvs, dsv);
 }
 
@@ -306,6 +323,17 @@ static void STDMETHODCALLTYPE hkClearDepth(ID3D11DeviceContext* c, ID3D11DepthSt
     oClearDepth(c, dsv, flags, depth, stencil);
 }
 
+// Called after every draw: the first one that lands in the back buffer finishes the scene.
+static void after_bb_draw(ID3D11DeviceContext* c, UINT count) {
+    if (!g_bbBound || g_internal || c != g_ctx || g_stopped) return;
+    g_bbDraws++;
+    if (g_dev && g_presents % 900 == 30 && g_bbDraws <= 12) log("ui_order: back buffer draw %d, %u vertices, view %.0fx%.0f", g_bbDraws, count, g_vpW, g_vpH);
+    if (g_bbDraws == 1 && !g_midDone) {
+        g_midDone = true;
+        mid_composite();
+    }
+}
+
 static void STDMETHODCALLTYPE hkDrawII(ID3D11DeviceContext* c, UINT a, UINT b, UINT d, INT e, UINT f) {
     if (g_cur >= 0 && c == g_ctx) {
         DepthCand& k = g_cands[g_cur];
@@ -314,6 +342,29 @@ static void STDMETHODCALLTYPE hkDrawII(ID3D11DeviceContext* c, UINT a, UINT b, U
         k.vpH = g_vpH;
     }
     oDrawII(c, a, b, d, e, f);
+    after_bb_draw(c, b);
+}
+
+typedef void(STDMETHODCALLTYPE* Draw_t)(ID3D11DeviceContext*, UINT, UINT);
+typedef void(STDMETHODCALLTYPE* DrawIdx_t)(ID3D11DeviceContext*, UINT, UINT, INT);
+typedef void(STDMETHODCALLTYPE* DrawInst_t)(ID3D11DeviceContext*, UINT, UINT, UINT, UINT);
+static Draw_t oDraw = nullptr;
+static DrawIdx_t oDrawIdx = nullptr;
+static DrawInst_t oDrawInst = nullptr;
+
+static void STDMETHODCALLTYPE hkDraw(ID3D11DeviceContext* c, UINT count, UINT start) {
+    oDraw(c, count, start);
+    after_bb_draw(c, count);
+}
+
+static void STDMETHODCALLTYPE hkDrawIdx(ID3D11DeviceContext* c, UINT count, UINT start, INT base) {
+    oDrawIdx(c, count, start, base);
+    after_bb_draw(c, count);
+}
+
+static void STDMETHODCALLTYPE hkDrawInst(ID3D11DeviceContext* c, UINT count, UINT instances, UINT start, UINT startInstance) {
+    oDrawInst(c, count, instances, start, startInstance);
+    after_bb_draw(c, count);
 }
 
 static void STDMETHODCALLTYPE hkViewports(ID3D11DeviceContext* c, UINT n, const D3D11_VIEWPORT* v) {
@@ -1096,19 +1147,11 @@ static bool adopt_swapchain(IDXGISwapChain* sc) {
     return true;
 }
 
-static void on_present(IDXGISwapChain* sc, UINT flags) {
-    if (g_stopped || !g_shm || (flags & DXGI_PRESENT_TEST)) return;
-    if (!g_sc && !adopt_swapchain(sc)) return;
-    if (sc != g_sc) return;
-    g_presents++;
-    DXGI_SWAP_CHAIN_DESC d;
-    sc->GetDesc(&d);
-    UINT bbW = d.BufferDesc.Width, bbH = d.BufferDesc.Height;
-
+// The Lua mod writes through file IO, slowly enough that a read can land inside a write. Then the last
+// complete copy stands: one missed read must not look like a loading screen to Minecraft.
+static LuaView& read_lua() {
     static uint32_t lastTick = 0;
     static uint64_t lastTickMs = 0;
-    // The Lua mod writes through file IO, slowly enough that a read can land inside a write. Then the last
-    // complete copy stands: one missed read must not look like a loading screen to Minecraft.
     static LuaView lua;
     static bool haveLua = false;
     uint8_t raw[PC_SIZE_LUASTATE];
@@ -1123,9 +1166,37 @@ static void on_present(IDXGISwapChain* sc, UINT flags) {
         lastTickMs = now;
     }
     lua.fresh = haveLua && lastTickMs && now - lastTickMs < 500;
+    return lua;
+}
+
+// The scene is in the back buffer and the interface is not: the Minecraft layers belong here.
+static void mid_composite() {
+    if (!g_sc || !g_shm || g_failed) return;
+    DXGI_SWAP_CHAIN_DESC d;
+    if (FAILED(g_sc->GetDesc(&d))) return;
+    composite(read_lua(), d.BufferDesc.Width, d.BufferDesc.Height);
+}
+
+static void on_present(IDXGISwapChain* sc, UINT flags) {
+    if (g_stopped || !g_shm || (flags & DXGI_PRESENT_TEST)) return;
+    if (!g_sc && !adopt_swapchain(sc)) return;
+    if (sc != g_sc) return;
+    g_presents++;
+    DXGI_SWAP_CHAIN_DESC d;
+    sc->GetDesc(&d);
+    UINT bbW = d.BufferDesc.Width, bbH = d.BufferDesc.Height;
+    LuaView& lua = read_lua();
 
     adopt_depth(bbW, bbH);
-    if (!g_failed) composite(lua, bbW, bbH);
+    // No draw reached the back buffer before Present (an unusual frame): the layers go in now, over the interface.
+    if (!g_failed && !g_midDone) composite(lua, bbW, bbH);
+    g_midDone = false;
+    g_bbDraws = 0;
+    {
+        ID3D11Texture2D* bb = nullptr;
+        g_bbTex = SUCCEEDED(sc->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&bb)) ? bb : nullptr;
+        if (bb) bb->Release();
+    }
     if (g_dev && lua.fresh && g_presents % 300 == 0) {
         g_internal = true;
         calibrate_near(lua);
@@ -1160,6 +1231,8 @@ static HRESULT STDMETHODCALLTYPE hkPresent1(IDXGISwapChain1* sc, UINT sync, UINT
 
 static HRESULT STDMETHODCALLTYPE hkResize(IDXGISwapChain* sc, UINT n, UINT w, UINT h, DXGI_FORMAT f, UINT flags) {
     if (sc == g_sc) {
+        g_bbTex = nullptr;
+        g_bbBound = false;
         release_scene();
         log("present: back buffers resize to %ux%u", w, h);
     }
@@ -1234,6 +1307,12 @@ static bool install_hooks() {
     ok = ok && hook(cv[PC_SLOT_CLEAR_DEPTH], (void*)hkClearDepth, (void**)&oClearDepth, "ClearDepthStencilView");
     ok = ok && hook(cv[PC_SLOT_DRAW_INDEXED], (void*)hkDrawII, (void**)&oDrawII, "DrawIndexedInstanced");
     ok = ok && hook(cv[PC_SLOT_VIEWPORTS], (void*)hkViewports, (void**)&oViewports, "RSSetViewports");
+    // Without these three the layers still draw, at Present, over Palworld's interface.
+    if (ok) {
+        hook(cv[PC_SLOT_DRAW_PLAIN], (void*)hkDraw, (void**)&oDraw, "Draw");
+        hook(cv[PC_SLOT_DRAW_IDX], (void*)hkDrawIdx, (void**)&oDrawIdx, "DrawIndexed");
+        hook(cv[PC_SLOT_DRAW_INST], (void*)hkDrawInst, (void**)&oDrawInst, "DrawInstanced");
+    }
     if (ok) {  // the pointer fix is a comfort: the mod runs without it
         HMODULE user32 = GetModuleHandleA("user32.dll");
         void* setCursor = user32 ? (void*)GetProcAddress(user32, "SetCursor") : nullptr;

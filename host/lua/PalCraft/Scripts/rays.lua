@@ -1,6 +1,7 @@
 -- System "terrain": Minecraft asks where Palworld's ground and walls are by sending batches of rays;
 -- each is answered with a line trace. A batch is spread over ticks so a frame never stalls.
 local P = require("gen_protocol")
+local U = require("util")
 local shm = require("shm")
 local M = {}
 
@@ -25,10 +26,10 @@ end
 
 local function line(pawn, sx, sy, sz, ex, ey, ez)
     local hit = {}
-    if KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
-            0, false, none, 0, hit, true, black, black, 0.0) then
-        return hit
-    end
+    local blocked = KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
+        0, false, none, 0, hit, true, black, black, 0.0)
+    U.release(hit)
+    if blocked then return hit end
 end
 
 -- Palworld's hills and cliffs are shells with one-sided faces: a ray that starts inside one sees nothing of it
@@ -49,10 +50,10 @@ local function trace(pawn, sx, sy, sz, ex, ey, ez)
     end
     for _ = 1, 3 do
         local hit = {}
-        if not KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
-                0, false, none, 0, hit, true, black, black, 0.0) then
-            return MISS
-        end
+        local blocked = KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
+            0, false, none, 0, hit, true, black, black, 0.0)
+        U.release(hit)
+        if not blocked then return MISS end
         local p, n = hit.ImpactPoint, hit.ImpactNormal
         if not is_character(hit) then
             return string.pack("<ffffffI4I4", p.Y / 100, p.Z / 100, p.X / 100, n.Y, n.Z, n.X, 1, 0)

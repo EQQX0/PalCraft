@@ -1,6 +1,7 @@
 -- System "self_test": during a Melty test run, report which parts of the bridge came alive.
 -- Melty leaves %LOCALAPPDATA%\Melty\test\<slug>.json while it watches a run; players never have it.
 local P = require("gen_protocol")
+local U = require("util")
 local shm = require("shm")
 local M = {}
 
@@ -8,6 +9,7 @@ local SLUG = P.listing.slug
 local checksPath   -- where to append results; false = not a test run
 local done = {}
 local raysAnswered = false
+local busyTicks = 0 -- ticks with Minecraft linked and terrain answered
 
 local function find_test()
     local f = io.open((os.getenv("LOCALAPPDATA") or "") .. "\\Melty\\test\\" .. SLUG .. ".json", "rb")
@@ -42,6 +44,8 @@ function M.tick(env)
         raysAnswered = req ~= 0 and req == resp
     end
     if raysAnswered then pass("terrain-answered") end
+    if raysAnswered and env.linked then busyTicks = busyTicks + 60 end
+    if busyTicks >= P.tune.selftest_mem_ticks and U.lua_mb() < P.tune.selftest_mem_mb then pass("memory-steady") end
 end
 
 return M

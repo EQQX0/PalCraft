@@ -37,6 +37,9 @@ public final class HostBodyServer {
 		for (ServerPlayer player : server.getPlayerList().getPlayers()) {
 			if (player.isAlive()) {
 				player.moveTo(feet.x, feet.y, feet.z, player.getYRot(), player.getXRot());
+				// The server follows a player's chunks from the moves the client sends, and there are none in
+				// this mode: without this Steve walks out of the loaded world and is no longer drawn (2026-10-12).
+				player.serverLevel().getChunkSource().move(player);
 				player.setDeltaMovement(Vec3.ZERO);
 				player.fallDistance = 0.0F;
 			}

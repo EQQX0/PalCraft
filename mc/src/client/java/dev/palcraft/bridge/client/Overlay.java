@@ -47,6 +47,10 @@ public final class Overlay {
 	private static boolean hostPreparationPending = true;
 	private static boolean focusPending;
 	private static final GameState STATE = new GameState();
+	/** System "host_gone": when Palworld's window last existed, and whether this session ever saw it. */
+	private static long lastHostMs;
+	private static boolean hostSeen;
+	private static final boolean DEV = java.nio.file.Files.exists(java.nio.file.Path.of(dev.palcraft.bridge.link.BridgePaths.file("dev_enabled")));
 
 	public static boolean active() {
 		return active;
@@ -190,6 +194,16 @@ public final class Overlay {
 		boolean haveHostWindow = Platform.get() == Platform.WINDOWS && WindowsOverlay.hostAvailable(link.hostProcessId());
 		// Remember the last valid hunter state for short area-load gaps.
 		long now = System.currentTimeMillis();
+		if (haveHostWindow || alive) {
+			lastHostMs = now;
+			hostSeen = true;
+		} else if (hostSeen && !DEV && now - lastHostMs > 20000 && TerrainManager.isBridgeWorld()) {
+			// Palworld closed or crashed. This window is hidden or see-through and nobody can reach its menu:
+			// save and leave, so no unseen Minecraft keeps running.
+			hostSeen = false;
+			LOG.info("Palworld is gone: saving and closing Minecraft");
+			mc.stop();
+		}
 		if (haveState && STATE.has(Protocol.STATE_PLAYER_VALID)) {
 			lastInWorldMs = now;
 		}

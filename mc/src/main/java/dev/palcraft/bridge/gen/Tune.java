@@ -17,4 +17,6 @@ public final class Tune {
 	public static final double WARMTH_RADIUS = 5.0;
 	/** the PalCraft world is saved this often while both games run (s) */
 	public static final double AUTOSAVE_S = 45.0;
+	/** Palworld mode: Steve is drawn with at least this much block light, so Palworld's night does not turn him into a silhouette (level) */
+	public static final double BODY_MIN_LIGHT = 9.0;
 }

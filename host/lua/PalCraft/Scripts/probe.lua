@@ -1,6 +1,7 @@
 -- System "surface_probe": Minecraft digs Palworld's world for materials. It sends one ray along Steve's
 -- crosshair and gets back what kind of surface that ray lands on, so a tree gives wood and a cliff gives stone.
 local P = require("gen_protocol")
+local U = require("util")
 local shm = require("shm")
 local M = {}
 
@@ -60,10 +61,10 @@ end
 local function probe(pawn, sx, sy, sz, ex, ey, ez)
     for _ = 1, 3 do
         local hit = {}
-        if not KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
-                0, false, none, 0, hit, true, black, black, 0.0) then
-            return S.NONE
-        end
+        local blocked = KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
+            0, false, none, 0, hit, true, black, black, 0.0)
+        U.release(hit)
+        if not blocked then return S.NONE end
         local ok, kind, character = pcall(classify, hit)
         if not ok then return S.STONE end
         if not character then return kind end

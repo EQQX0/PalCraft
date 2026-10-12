@@ -31,9 +31,17 @@
     ["pal_box_min_radius_m", 0.45, "m", "lua", "narrowest hitbox half-width a Pal gets in Minecraft"],
     ["pal_box_min_half_m", 0.5, "m", "lua", "lowest hitbox half-height a Pal gets in Minecraft"],
     ["autosave_s", 45, "s", "mc", "the PalCraft world is saved this often while both games run"],
+    ["body_min_light", 9, "level", "mc", "Palworld mode: Steve is drawn with at least this much block light, so Palworld's night does not turn him into a silhouette"],
+    ["selftest_mem_ticks", 3600, "ticks", "lua", "Melty test: Lua memory is judged after this many ticks with Minecraft linked and terrain answered"],
+    ["selftest_mem_mb", 300, "MB", "lua", "and passes under this much; the out-parameter leak of 0.2.0 reached it in 15 seconds"],
     ["kill_exp_base", 18, "exp", "lua", "Palworld experience for a level 1 Pal that Steve kills"],
     ["kill_exp_power", 1.35, "x", "lua", "how fast that experience grows with the Pal's level: base * level ^ power"],
     ["kill_exp_boss", 6, "x", "lua", "multiplier for an alpha or boss"],
+    ["body_cam_back_m", 1.6, "m", "lua", "Palworld mode: the camera sits this much further behind than Palworld's own, because Steve is wider than its character; a wall behind shortens it"],
+    ["body_cam_side_m", 0.55, "m", "lua", "Palworld mode: and this much further to the right, which keeps Steve left of the crosshair at the longer distance"],
+    ["shot_match_m", 0.3, "m", "lua", "Palworld's own shot (a conversation, a cutscene): Steve is drawn into it while Minecraft's frame was made within this distance of the shot's camera"],
+    ["shot_match_deg", 2.5, "deg", "lua", "and within this angle and field of view"],
+    ["shot_miss_ticks", 20, "ticks", "lua", "a shot that keeps moving faster than that for this long shows Palworld's own character instead"],
     ["kill_exp_level_lead", 4, "levels", "lua", "a Pal counts as at most this many levels above the character, so an easy win over a strong Pal does not skip the early game"]
   ]
 }

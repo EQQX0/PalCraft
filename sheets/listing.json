@@ -23,6 +23,7 @@
     ["test_check_1", "text",   "native-hooked"],
     ["test_check_2", "text",   "minecraft-linked"],
     ["test_check_3", "text",   "minecraft-drawn"],
-    ["test_check_4", "text",   "terrain-answered"]
+    ["test_check_4", "text",   "terrain-answered"],
+    ["test_check_5", "text",   "memory-steady"]
   ]
 }

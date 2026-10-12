@@ -8,8 +8,9 @@ local cam            -- our CameraActor
 local onCam = false  -- the player's view target is our camera
 local yielding = false -- Palworld took the view for a cutscene; ours is waiting
 local tags = {}      -- frame tag render targets
-local KRL, UI
+local KRL, UI, KSL
 local black = { R = 0, G = 0, B = 0, A = 1 }
+local ARM_END = FName("SpringEndpoint")
 
 local function ensure_cam(pawn)
     if cam and cam:IsValid() then return cam end
@@ -40,17 +41,81 @@ local function ue_fov(pc, fovY, aspect)
     return math.deg(2 * math.atan(math.tan(math.rad(fovY) / 2) * aspect))
 end
 
--- Renders this frame from the pose in ctrl (host metres). Returns true when the pose was applied.
--- keepHud: Palworld has the controls and needs its own HUD.
-function M.apply(pc, pawn, pos, target, fovY, aspect, keepHud)
-    local c = ensure_cam(pawn)
-    if not c or not c:IsValid() then return false end
+-- Palworld mode cuts the character's follow camera loose from its arm (see M.apply_body). This puts it back.
+local held, heldAt
+local function free_follow(pawn)
+    local c = held
+    held, heldAt = nil, nil
+    -- A reloaded copy of this file has forgotten what it held: the component itself still knows.
+    if not c and pawn and pawn:IsValid() then
+        local f = pawn.FollowCamera
+        if f and f:IsValid() and f.bAbsoluteLocation then c = f end
+    end
+    if c and c:IsValid() then
+        pcall(function()
+            c:SetAbsolute(false, false, false)
+            local swept = {}
+            c:K2_SetRelativeLocationAndRotation({ X = 0, Y = 0, Z = 0 }, { Pitch = 0, Yaw = 0, Roll = 0 }, false, swept, true)
+            U.release(swept)
+        end)
+    end
+end
+
+local function look(pos, target)
     local ex, ey, ez = U.to_ue(pos[1], pos[2], pos[3])
     local tx, ty, tz = U.to_ue(target[1], target[2], target[3])
     local dx, dy, dz = tx - ex, ty - ey, tz - ez
     local flat = math.sqrt(dx * dx + dy * dy)
-    if flat + math.abs(dz) < 1e-4 then return false end
-    local rot = { Pitch = math.deg(math.atan(dz, flat)), Yaw = math.deg(math.atan(dy, dx)), Roll = 0 }
+    if flat + math.abs(dz) < 1e-4 then return nil end
+    return { X = ex, Y = ey, Z = ez }, { Pitch = math.deg(math.atan(dz, flat)), Yaw = math.deg(math.atan(dy, dx)), Roll = 0 }
+end
+
+-- Palworld mode: renders this frame from the pose in ctrl, with the character still Palworld's view target.
+-- Its dialogue camera works out its place from the player's own camera and lands three kilometres away when
+-- another actor holds the view (2026-10-12). So the follow camera itself is cut loose from its arm and put
+-- at the pose; M.body reads where the arm wanted it.
+function M.apply_body(pc, pawn, pos, target)
+    local c = pawn.FollowCamera
+    local loc, rot = look(pos, target)
+    if not loc or not c or not c:IsValid() then return false end
+    local view = pc:GetViewTarget()
+    local at = view and view:IsValid() and view:GetAddress() or 0
+    if at ~= pawn:GetAddress() then
+        if cam and cam:IsValid() and at == cam:GetAddress() then
+            pc:SetViewTargetWithBlend(pawn, 0.0, 0, 0.0, false)
+            onCam = false
+        else
+            -- A cutscene or a conversation: Palworld's picture, and its camera back where it expects it.
+            if not yielding then
+                yielding = true
+                U.log("camera: Palworld shows its own view (" .. view:GetFullName():match("[%w_]+") .. "); waiting")
+            end
+            free_follow(pawn)
+            hud(pawn, true)
+            return false
+        end
+    end
+    yielding = false
+    if heldAt ~= c:GetAddress() then
+        free_follow(pawn)
+        c:SetAbsolute(true, true, false)
+        held, heldAt = c, c:GetAddress()
+    end
+    local swept = {}
+    c:K2_SetWorldLocationAndRotation(loc, rot, false, swept, true)
+    U.release(swept)
+    hud(pawn, true)
+    return true
+end
+
+-- Renders this frame from the pose in ctrl (host metres). Returns true when the pose was applied.
+-- keepHud: Palworld has the controls and needs its own HUD.
+function M.apply(pc, pawn, pos, target, fovY, aspect, keepHud)
+    free_follow(pawn)
+    local c = ensure_cam(pawn)
+    if not c or not c:IsValid() then return false end
+    local loc, rot = look(pos, target)
+    if not loc then return false end
     -- Palworld moves the view itself for a cutscene or a boss entrance. That is its picture to show: ours
     -- waits until the view is back on the character.
     local view = pc:GetViewTarget()
@@ -64,7 +129,9 @@ function M.apply(pc, pawn, pos, target, fovY, aspect, keepHud)
         return false
     end
     yielding = false
-    c:K2_SetActorLocationAndRotation({ X = ex, Y = ey, Z = ez }, rot, false, {}, true)
+    local swept = {}
+    c:K2_SetActorLocationAndRotation(loc, rot, false, swept, true)
+    U.release(swept)
     c.CameraComponent:SetFieldOfView(ue_fov(pc, fovY, aspect))
     if not onCam or at ~= c:GetAddress() then
         pc:SetViewTargetWithBlend(c, 0.0, 0, 0.0, false)
@@ -77,6 +144,7 @@ end
 -- Hands the view back to Palworld's own camera.
 function M.release(pc, pawn)
     yielding = false
+    free_follow(pawn)
     if onCam then
         onCam = false
         if pawn and pawn:IsValid() then
@@ -91,15 +159,64 @@ function M.overridden() return onCam end
 -- True while Palworld shows a view of its own and ours waits.
 function M.yielding() return yielding end
 
+-- System "steve_shot": Palworld is showing a shot of its own in Palworld mode. Minecraft drew its frame from
+-- the pose in ctrl; when that is the shot's camera, near enough, Steve belongs in the picture. Returns
+-- drawSteve, hideCharacter: a shot that keeps moving shows Palworld's own character instead.
+local misses = 0
+function M.shot(pc, pos, target, fovY, aspect)
+    local p, t, f = M.own(pc, aspect)
+    local dx, dy, dz = pos[1] - p[1], pos[2] - p[2], pos[3] - p[3]
+    local ax, ay, az = target[1] - pos[1], target[2] - pos[2], target[3] - pos[3]
+    local bx, by, bz = t[1] - p[1], t[2] - p[2], t[3] - p[3]
+    local na, nb = math.sqrt(ax * ax + ay * ay + az * az), math.sqrt(bx * bx + by * by + bz * bz)
+    local cos = na > 1e-6 and nb > 1e-6 and (ax * bx + ay * by + az * bz) / (na * nb) or 0
+    local same = dx * dx + dy * dy + dz * dz < P.tune.shot_match_m ^ 2
+        and cos > math.cos(math.rad(P.tune.shot_match_deg)) and math.abs(fovY - f) < P.tune.shot_match_deg
+    misses = same and 0 or misses + 1
+    return same, misses < P.tune.shot_miss_ticks
+end
+
 -- The camera Palworld wants while ours is the view target: the character's own follow camera, which its
 -- spring arm keeps moving. In host metres: pos, target, fovY.
 function M.body(pc, pawn, aspect)
     local c = pawn.FollowCamera
     if not c or not c:IsValid() then return M.own(pc, aspect) end
-    local l, r = c:K2_GetComponentLocation(), c:K2_GetComponentRotation()
+    local l, ux, uy, uz
+    if heldAt == c:GetAddress() then
+        -- Cut loose and sitting at Minecraft's pose: the end of its arm is where Palworld wants it.
+        local t = pawn.CameraBoom:GetSocketTransform(ARM_END, 0)
+        local q = t.Rotation
+        l = t.Translation
+        ux, uy, uz = 1 - 2 * (q.Y * q.Y + q.Z * q.Z), 2 * (q.X * q.Y + q.W * q.Z), 2 * (q.X * q.Z - q.W * q.Y)
+    else
+        local r = c:K2_GetComponentRotation()
+        local cp = math.cos(math.rad(r.Pitch))
+        l = c:K2_GetComponentLocation()
+        ux, uy, uz = cp * math.cos(math.rad(r.Yaw)), cp * math.sin(math.rad(r.Yaw)), math.sin(math.rad(r.Pitch))
+    end
+    local flat = math.max(1e-6, math.sqrt(ux * ux + uy * uy))
+    -- Steve is wider than Palworld's character: the camera steps back along the view and a little to the
+    -- right, so the middle of the picture looks along a parallel line half a metre over and Steve stays left
+    -- of it. A wall in the way shortens the step.
+    local sx = -(P.tune.body_cam_back_m * ux) - P.tune.body_cam_side_m * uy / flat
+    local sy = -(P.tune.body_cam_back_m * uy) + P.tune.body_cam_side_m * ux / flat
+    local sz = -(P.tune.body_cam_back_m * uz)
+    local step = math.sqrt(sx * sx + sy * sy + sz * sz) * 100
+    if step > 1 then
+        local nx, ny, nz = sx * 100 / step, sy * 100 / step, sz * 100 / step
+        KSL = KSL or StaticFindObject("/Script/Engine.Default__KismetSystemLibrary")
+        local hit = {}
+        local ok, blocked = pcall(function()
+            return KSL:LineTraceSingle(pawn, { X = l.X, Y = l.Y, Z = l.Z },
+                { X = l.X + nx * (step + 30), Y = l.Y + ny * (step + 30), Z = l.Z + nz * (step + 30) },
+                0, false, {}, 0, hit, true, black, black, 0.0)
+        end)
+        U.release(hit)
+        if not ok then step = 0 elseif blocked then step = math.max(0, math.min(step, hit.Distance - 30)) end
+        l = { X = l.X + nx * step, Y = l.Y + ny * step, Z = l.Z + nz * step }
+    end
     local px, py, pz = U.to_host(l.X, l.Y, l.Z)
-    local cp, sp = math.cos(math.rad(r.Pitch)), math.sin(math.rad(r.Pitch))
-    local fx, fy, fz = U.to_host(cp * math.cos(math.rad(r.Yaw)) * 100, cp * math.sin(math.rad(r.Yaw)) * 100, sp * 100)
+    local fx, fy, fz = U.to_host(ux * 100, uy * 100, uz * 100)
     local fovY = math.deg(2 * math.atan(math.tan(math.rad(c.FieldOfView) / 2) / aspect))
     return { px, py, pz }, { px + fx, py + fy, pz + fz }, fovY
 end
