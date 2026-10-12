@@ -167,6 +167,8 @@
     ["Body", "stomach", "0x1C", "f32", 1, "lua", "B_STOMACH", "Palworld's stomach, 0..1"],
     ["Body", "valid", "0x20", "u32", 1, "lua", "B_VALID", "1 while the fields above are real"],
     ["Body", "level", "0x24", "i32", 1, "lua", "B_LEVEL", "the Palworld character's level"],
-    ["Body", "killExp", "0x28", "u32", 1, "lua", "B_KILL_EXP", "Palworld experience Steve's kills have earned this session, running total"]
+    ["Body", "killExp", "0x28", "u32", 1, "lua", "B_KILL_EXP", "Palworld experience Steve's kills have earned this session, running total"],
+    ["Body", "health", "0x2C", "f32", 1, "lua", "B_HEALTH", "the Palworld character's health, 0..1"],
+    ["Body", "hudAway", "0x30", "u32", 1, "lua", "B_HUD_AWAY", "1 while Palworld shows a shot, a menu or a screen of its own: Minecraft holds its HUD back"]
   ]
 }

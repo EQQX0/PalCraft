@@ -106,10 +106,9 @@ public class ErBridgeClient implements ClientModInitializer {
 		});
 
 		HudRenderCallback.EVENT.register((graphics, tickCounter) -> {
-			if (HostBody.active()) {
-				return;  // Palworld's HUD is the one on screen
+			if (!HostBody.active()) {
+				renderPrompt(graphics);  // in Palworld mode Palworld draws its own prompts
 			}
-			renderPrompt(graphics);
 			BodyHud.render(Minecraft.getInstance(), graphics);
 			renderStatus(graphics);
 		});

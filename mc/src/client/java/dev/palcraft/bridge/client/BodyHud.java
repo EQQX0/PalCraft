@@ -42,8 +42,9 @@ public final class BodyHud {
 		if (lastKillExp >= 0 && killExp != lastKillExp && !HostBody.active()) {
 			mc.player.displayClientMessage(Component.literal("+" + (killExp - lastKillExp) + " Palworld experience"), true);
 		}
-		if (lastLevel > 0 && level > lastLevel && !HostBody.active()) {
-			mc.player.displayClientMessage(Component.literal("Palworld level " + level + ". Press F8 to spend your points."), false);
+		if (lastLevel > 0 && level > lastLevel) {
+			mc.player.displayClientMessage(Component.literal("Palworld level " + level + (HostBody.active()
+				? ". Open Palworld's menu to spend your points." : ". Press F8 to spend your points.")), false);
 			mc.player.playSound(SoundEvents.PLAYER_LEVELUP, 0.6F, 1.0F);
 		}
 		lastLevel = level;

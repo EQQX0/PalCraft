@@ -83,3 +83,34 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
     - Driving an installed build: tools/mcdrive.py sends keys to Minecraft's input window. tools/pal.sh and
       `um win shot` put Palworld's window in front, so Minecraft loses the keyboard after each screenshot;
       F8 hand-over itself works both ways (checked with mcdrive --raw).
+  - Played Palworld mode down the untested list (dev build) and fixed what broke:
+    - Mining and melee hit nothing: Unreal stops refreshing the bones of a mesh nobody sees, and a swing is
+      the tool swept along the hand bone. standin.lua sets the hidden character's mesh to option 0 (always
+      tick pose and refresh bones) through KismetSystemLibrary:SetBytePropertyByName. Measured at one rock,
+      6 s of mining: hidden 0 stone, shown 11, hidden with the fix 10. Lamball 584 -> 217 HP in 2.5 s.
+    - UE4SS 3.0.1 crashed Palworld (access violation in UE4SS) reading the enum property
+      VisibilityBasedAnimTickOption from Lua. K2_GetComponentsByClass from Lua crashed it too. Neither is
+      in the mod. GetAttachedActors with a table as out parameter returns nothing.
+    - The pickaxe on the back while a sphere is in hand is a PalBackWeaponBase: attached to the character,
+      owned by nobody, absent from pawn.Children. FindAllOf costs 34 ms, so standin.lua takes the existing
+      ones once and NotifyOnNewObject reports new ones.
+    - Defeat: life.lua keeps Palworld mode drawing while the character is dead; HostBody raises deathTime.
+    - Swimming (MovementMode 4): Steve lay under the surface; swim_feet_m lifts him to the waterline.
+    - Worked as they were: sphere throw and capture attempt, Rayne Syndicate Tower (join prompt, confirm,
+      loading screen, intro cutscene, arena, boss bar, defeat, respawn, death chest at the entrance),
+      crafting cloth and a parachute, gliding (the parachute shows above Steve), build mode, conversations.
+    - Not reached: riding (needs a saddle and a mount), bows and guns (30 wood and 15 fiber short), raids
+      (Palworld starts them). PalCheatManager exists in the shipped game with empty native bodies: GetItem,
+      SetPlayerHP and console commands do nothing, so test gear comes from play.
+    - A workbench outside a base is gone after a defeat and respawn. Palworld's rule, not the mod.
+  - Minecraft's HUD in Palworld mode, at the creator's request (system hud_swap):
+    - HostBody no longer hides the GUI. Hearts and hunger show Body.health and Body.stomach on the client
+      copy of Steve only; the server keeps his own, and leaving Palworld mode reads them back. Health never
+      reaches zero on the client, or Minecraft opens its death screen. No crosshair (GuiMixin).
+    - hud.lua fades Canvas_HP, WBP_IngameHungerGauge, WBP_Ingame_Thermometer and WBP_IngameStatusPoint
+      inside WBP_Ingame_PlayerGauge_Separated_C with SetRenderOpacity, re-applied every 30 ticks.
+      SetRenderOpacity on the whole gauge hides the Pal party and tool panel too.
+    - Body.hudAway: the character is dead, a shot of Palworld's own is up (camera.yielding), its mouse
+      pointer is out (pc.bShowMouseCursor, true in every menu) or WBP_IngameConstruction_C is visible
+      (build mode shows no pointer; Palworld makes that widget the first time the player builds).
+    - A new Lua module must be in main.lua's reload list, or a dev reload keeps running the old copy.

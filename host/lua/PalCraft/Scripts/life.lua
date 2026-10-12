@@ -19,9 +19,12 @@ function M.tick(env)
         dead = cp ~= nil and cp:IsValid() and cp:IsDead()
     end
     env.dead = dead
-    env.busy = not env.hasPawn or dead
+    -- Palworld mode keeps drawing through a defeat: Steve lies where the character fell. In Minecraft mode
+    -- Palworld's defeat screen is its own.
+    local body = (env.cflags or 0) & P.ctrl.HOST_BODY ~= 0
+    env.busy = not env.hasPawn or (dead and not body)
     if dead and not wasDead then bump(H.hostDeaths) end
-    local usable = not env.busy
+    local usable = env.hasPawn and not dead
     if usable and not wasUsable then bump(H.hostLife) end
     wasUsable, wasDead = usable, dead
 

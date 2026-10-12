@@ -19,11 +19,13 @@ You start in survival with a kit: iron sword, bow and arrows, iron pickaxe, buil
 
 ## Palworld mode
 
-Press **F8** and Palworld takes the keyboard and mouse. Its rules, its HUD and its menus are yours, and Steve stays on screen as your character, walking, crouching and swinging where Palworld's own would. Press **F8** again for Minecraft's controls.
+Press **F8** and Palworld takes the keyboard and mouse. Its rules and its menus are yours, and Steve stays on screen as your character, walking, crouching, swimming, gliding and swinging where Palworld's own would. Press **F8** again for Minecraft's controls.
 
-Played this way so far: the fast travel statue, the first quests, talking to the islander, the tech tree, the build menu, a workbench, a pickaxe, Pal Spheres, catching a Chikipi, summoning it, the cold at night, defeat, the respawn map and respawning.
+The HUD stays Minecraft's. The hearts show your Palworld character's health and the hunger bar its stomach, next to your hotbar, armor and temperature gauge. Palworld keeps what Minecraft has no picture for: prompts, the compass, your Pal party, the tool panel and boss bars. Minecraft's HUD steps back while a Palworld menu, build mode, a conversation, a cutscene or the defeat screen is up.
 
-The two modes keep separate health. In Palworld mode Palworld's health bar is the one that counts, and nothing in Minecraft hurts Steve.
+Played this way so far: the fast travel statue, the first quests, talking to the islander, the tech tree, the build menu, a workbench, a pickaxe, mining, fighting Lamballs, Pal Spheres, catching a Chikipi, summoning it, cloth and a parachute, gliding, swimming, the cold at night, the Rayne Syndicate Tower fight, defeat, the respawn map and respawning.
+
+The two modes keep separate health. In Palworld mode the hearts are your Palworld character's, and nothing in Minecraft hurts Steve. Back in Minecraft mode the hearts are Steve's own again.
 
 ## What you need
 
@@ -63,7 +65,12 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 - Palworld mode shows Steve. In 0.2.0 F8 showed Palworld's own character.
 - Fixed: Palworld's memory grew by about 1 GB a minute while Minecraft was linked. A long session could run the PC out of memory. Update if you play 0.2.0.
 - Fixed: progress in the Minecraft world could be lost when Palworld closed first. The world now saves every 45 seconds, and Minecraft closes by itself when Palworld is gone.
-- Fixed: the tool your Palworld character holds floated on Steve's chest. Steve's hands are empty in Palworld mode, and Palworld's HUD shows the tool in use.
+- Fixed: the tool your Palworld character holds floated on Steve's chest. Steve's hands are empty in Palworld mode, and Palworld's tool panel shows the tool in use.
+- Palworld mode keeps Minecraft's HUD: hearts for your character's health, hunger for its stomach, with your hotbar, armor and temperature gauge. Palworld's own health, hunger and temperature gauges step aside.
+- Fixed: mining and melee hit nothing in Palworld mode. The hidden character's bones stood still, so its tool swept through nothing.
+- Fixed: the pickaxe stowed on the character's back showed on Steve while he aimed a Pal Sphere.
+- Steve falls on Palworld's defeat screen and gets up when you respawn.
+- A swimming Steve floats at the waterline. He lay under the surface before.
 - With a wall right behind you in Palworld mode, the camera shows the world ahead instead of Steve's back.
 - Kills as Steve give Palworld experience. A message tells you when your character levels up.
 - A kit that gained items in an update tops itself up for existing players.
@@ -76,9 +83,10 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 - Nights are cold. Hold a torch, stand by a fire or wear leather.
 - Your Palworld character stays hidden and follows Steve. If a single blow kills it outright, press F8 and respawn in Palworld.
 - Chests, Pal Spheres and Palworld menus need F8 first.
-- Palworld's defeat screen shows its own character lying there. Steve is back after you respawn.
+- In Palworld mode the hotbar shows Steve's Minecraft items. Palworld's tools do the work there, and the number keys go to Palworld.
+- Palworld's inventory screen shows its own character in the preview.
 - Steve is wider than Palworld's character, so he covers more of an over-the-shoulder conversation shot.
-- Riding, gliding, guns, raids and boss towers are untested in Palworld mode.
+- Riding, bows, guns and raids are untested in Palworld mode.
 
 ## Credits
 

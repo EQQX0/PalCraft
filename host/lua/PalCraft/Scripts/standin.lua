@@ -50,6 +50,23 @@ end
 local gear = {}
 local gearTick = 0
 local WEAPON
+-- The tool Palworld stows on the character's back while a sphere is in its hand is a third kind of actor:
+-- attached to the character, owned by nobody. Searching all of Palworld's objects for them takes tens of
+-- milliseconds: do it once, then let Palworld tell us about each new one.
+local backs = {}
+local watching = false
+local function watch_backs()
+    if watching then return end
+    watching = true
+    for _, a in ipairs(FindAllOf("PalBackWeaponBase") or {}) do
+        if a:IsValid() then backs[a:GetAddress()] = a end
+    end
+    local gen = _G.PALCRAFT_GEN
+    NotifyOnNewObject("/Script/Pal.PalBackWeaponBase", function(a)
+        if gen ~= _G.PALCRAFT_GEN then return true end
+        backs[a:GetAddress()] = a
+    end)
+end
 local function each_tool(pawn, fn)
     WEAPON = WEAPON or StaticFindObject("/Script/Pal.PalWeaponBase")
     if not WEAPON or not WEAPON:IsValid() then return end
@@ -57,6 +74,16 @@ local function each_tool(pawn, fn)
         local a = e:get()
         if a and a:IsValid() and a:IsA(WEAPON) then fn(a) end
     end)
+    watch_backs()
+    local me = pawn:GetAddress()
+    for at, a in pairs(backs) do
+        if not a:IsValid() then
+            backs[at] = nil
+        else
+            local on = a:GetAttachParentActor()
+            if on and on:IsValid() and on:GetAddress() == me then fn(a) end
+        end
+    end
 end
 local function hide_gear(pawn)
     each_tool(pawn, function(a)
@@ -73,10 +100,28 @@ local function show_gear(pawn)
     gear = {}
 end
 
+-- Unreal stops posing the bones of a mesh nobody sees. A swing is a sweep of the tool along the hand bone:
+-- with the character hidden its pickaxe hung still and hit nothing. Option 0 = always tick the pose and
+-- refresh the bones. Set through Unreal's own setter, once per character: UE4SS crashed the game reading
+-- this enum property, so the mod never learns the old value and leaves the new one in place (it costs
+-- nothing on a character the player is looking at).
+local posed
+local KISMET
+local function keep_posing(pawn)
+    local at = pawn:GetAddress()
+    if posed == at then return end
+    KISMET = KISMET or StaticFindObject("/Script/Engine.Default__KismetSystemLibrary")
+    local mesh = pawn.Mesh
+    if not (KISMET and KISMET:IsValid() and mesh and mesh:IsValid()) then return end
+    KISMET:SetBytePropertyByName(mesh, FName("VisibilityBasedAnimTickOption"), 0)
+    posed = at
+end
+
 function M.hide(pawn, want)
     if not (pawn and pawn:IsValid()) then return end
     want = want and true or false
     if want ~= hidden then
+        if want then U.guard("posing", function() keep_posing(pawn) end) end
         pawn:SetActorHiddenInGame(want)
         hidden = want
         gearTick = 0
@@ -94,7 +139,11 @@ end
 -- The character's feet in host metres and facing as a quaternion about the up axis.
 function M.where(pawn)
     local l = pawn:K2_GetActorLocation()
-    local x, y, z = U.to_host(l.X, l.Y, l.Z - halfHeight)
+    local cm = pawn.CharacterMovement
+    -- A swimmer's feet trail behind it and its middle sits under the surface. Steve swims flat: measured from
+    -- the feet he would lie on the seabed side of the waterline, out of sight under Palworld's water.
+    local down = cm and cm:IsValid() and cm.MovementMode == 4 and -P.tune.swim_feet_m * 100 or halfHeight
+    local x, y, z = U.to_host(l.X, l.Y, l.Z - down)
     local yaw = math.rad(pawn:K2_GetActorRotation().Yaw)
     return { x, y, z }, { 0, math.sin(yaw / 2), 0, math.cos(yaw / 2) }
 end

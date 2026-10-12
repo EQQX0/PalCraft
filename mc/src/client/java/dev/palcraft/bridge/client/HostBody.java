@@ -9,6 +9,8 @@ import dev.palcraft.bridge.link.Protocol;
 import net.minecraft.client.KeyMapping;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.player.LocalPlayer;
+import net.minecraft.client.server.IntegratedServer;
+import net.minecraft.server.level.ServerPlayer;
 import net.minecraft.world.InteractionHand;
 import net.minecraft.world.entity.Pose;
 import net.minecraft.world.phys.Vec3;
@@ -31,6 +33,8 @@ public final class HostBody {
 	private static double lastX, lastZ;
 	private static Pose pose = Pose.STANDING;
 	private static boolean tooClose;
+	private static final float[] VITALS = new float[2];
+	private static boolean mirrored;
 
 	/** True while Steve's body follows the Palworld character. */
 	public static boolean active() {
@@ -62,6 +66,10 @@ public final class HostBody {
 	static void update(Minecraft mc, boolean hostMode, boolean want) {
 		HostBodyServer.hostMode = hostMode;
 		if (want == active) {
+			if (active) {
+				// The HUD is Minecraft's in Palworld mode too, except over a shot or screen Palworld shows by itself.
+				mc.options.hideGui = savedHideGui || ErLink.get().hudAway();
+			}
 			return;
 		}
 		active = want;
@@ -71,12 +79,45 @@ public final class HostBody {
 		pose = Pose.STANDING;
 		if (want) {
 			savedHideGui = mc.options.hideGui;
-			mc.options.hideGui = true;  // Palworld's HUD is the one on screen
 			mc.gameRenderer.setRenderHand(false);
 			KeyMapping.releaseAll();
 		} else {
 			mc.options.hideGui = savedHideGui;
 			mc.gameRenderer.setRenderHand(true);
+			if (mc.player != null) {
+				mc.player.deathTime = 0;
+				ownVitals(mc, mc.player);
+			}
+		}
+	}
+
+	/**
+	 * Palworld mode: the hearts and the hunger bar show the body that takes the hits and gets hungry there, the
+	 * Palworld character's. Only this client's copy of Steve changes; his own health and food wait on the server.
+	 */
+	private static void mirrorVitals(LocalPlayer p) {
+		if (!ErLink.get().readVitals(VITALS)) {
+			return;
+		}
+		// Never zero: a client player with no health opens Minecraft's death screen.
+		p.setHealth(Math.max(0.01F, Math.min(1.0F, VITALS[0]) * p.getMaxHealth()));
+		p.getFoodData().setFoodLevel(Math.round(20.0F * Math.max(0.0F, Math.min(1.0F, VITALS[1]))));
+		p.getFoodData().setSaturation(0.0F);
+		mirrored = true;
+	}
+
+	/** Back in Minecraft mode: Steve's own health and food, as the server kept them. */
+	private static void ownVitals(Minecraft mc, LocalPlayer p) {
+		if (!mirrored) {
+			return;
+		}
+		mirrored = false;
+		IntegratedServer server = mc.getSingleplayerServer();
+		ServerPlayer own = server == null ? null : server.getPlayerList().getPlayer(p.getUUID());
+		if (own != null) {
+			p.setHealth(Math.max(0.01F, own.getHealth()));
+			p.getFoodData().setFoodLevel(own.getFoodData().getFoodLevel());
+			p.getFoodData().setSaturation(own.getFoodData().getSaturationLevel());
 		}
 	}
 
@@ -123,8 +164,11 @@ public final class HostBody {
 		lastX = feet.x;
 		lastZ = feet.z;
 		haveLast = true;
+		mirrorVitals(p);
 		pose = STATE.has(Protocol.STATE_BODY_SWIM) ? Pose.SWIMMING
 			: STATE.has(Protocol.STATE_BODY_CROUCH) ? Pose.CROUCHING : Pose.STANDING;
+		// Defeated in Palworld: Steve falls the way a Minecraft player does, and gets up when the character does.
+		p.deathTime = STATE.has(Protocol.STATE_PLAYER_DEAD) ? Math.min(20, p.deathTime + 1) : 0;
 		if (STATE.has(Protocol.STATE_BODY_ACT) && !p.swinging) {
 			p.swing(InteractionHand.MAIN_HAND);
 		}

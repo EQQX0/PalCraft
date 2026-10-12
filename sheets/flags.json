@@ -23,7 +23,7 @@
     ["ctrl", "NO_RELIGHT",      "0x080", "mc", "-",                    "debug: no Palworld lighting on blocks"],
     ["ctrl", "GROUNDED",        "0x100", "mc", "CTRL_GROUNDED",        "Steve stands on something"],
     ["ctrl", "FLYING",          "0x200", "mc", "CTRL_FLYING",          "creative flight"],
-    ["ctrl", "HOST_BODY",       "0x400", "mc", "CTRL_HOST_BODY",       "Palworld has the controls: camPos/camTarget echo its own camera, its HUD stays, Steve is drawn where the character stands"],
+    ["ctrl", "HOST_BODY",       "0x400", "mc", "CTRL_HOST_BODY",       "Palworld has the controls: camPos/camTarget echo its own camera, Minecraft's HUD stays up, Steve is drawn where the character stands"],
 
     ["frame", "WORLD", "0x1", "mc", "-", "slot has world colour + depth"],
     ["frame", "HUD",   "0x2", "mc", "-", "slot has a HUD layer"],

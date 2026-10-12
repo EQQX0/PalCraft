@@ -202,6 +202,16 @@ public final class ErLink {
 		return shm != null ? shm.actionResult() : 0;
 	}
 
+	/** out: the Palworld character's health and stomach, each 0..1. */
+	public synchronized boolean readVitals(float[] out) {
+		return shm != null && alive() && shm.readVitals(out);
+	}
+
+	/** Palworld shows a shot or screen of its own: a cutscene, a conversation, its defeat screen. */
+	public synchronized boolean hudAway() {
+		return shm != null && alive() && shm.hudAway();
+	}
+
 	/** The action Palworld offers right now ("" if none). */
 	public synchronized String hostPrompt() {
 		return shm != null ? shm.hostPrompt() : "";

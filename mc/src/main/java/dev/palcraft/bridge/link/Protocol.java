@@ -154,6 +154,8 @@ public final class Protocol {
 	public static final int B_VALID = 0x20;
 	public static final int B_LEVEL = 0x24;
 	public static final int B_KILL_EXP = 0x28;
+	public static final int B_HEALTH = 0x2C;
+	public static final int B_HUD_AWAY = 0x30;
 
 	// Ray queries (ErmcRayHeader), relative to OFF_RAYS
 	public static final int OFF_RAYS = 0x100000;

@@ -227,6 +227,19 @@ public final class BridgeShm {
 		buf.putInt(Protocol.OFF_BODY + Protocol.B_WARMTH, warmth);
 	}
 
+	/** out: the Palworld character's health and stomach, each 0..1. False while Palworld has not reported them. */
+	public boolean readVitals(float[] out) {
+		int base = Protocol.OFF_BODY;
+		out[0] = buf.getFloat(base + Protocol.B_HEALTH);
+		out[1] = buf.getFloat(base + Protocol.B_STOMACH);
+		return buf.getInt(base + Protocol.B_VALID) == 1;
+	}
+
+	/** Palworld shows a shot or screen of its own. */
+	public boolean hudAway() {
+		return buf.getInt(Protocol.OFF_BODY + Protocol.B_HUD_AWAY) != 0;
+	}
+
 	/** out: temperature, heat resist, cold resist. False while Palworld has not reported them. */
 	public boolean readBody(int[] out) {
 		int base = Protocol.OFF_BODY;
