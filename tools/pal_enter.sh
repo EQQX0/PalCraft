@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # From Palworld's title screen: dismiss notices, open the first world, wait until the player exists.
-cd /c/Users/Admin/PalCraft
+cd /c/Users/Admin/Desktop/repos/PalCraft
 inworld() { python tools/repl.py "local pc=FindFirstOf('PlayerController'); P(pc:GetFullName():find('PL_MainWorld') and pc.Pawn:IsValid() and 'inworld' or 'no')" | grep -q inworld; }
 if inworld; then echo inworld; exit 0; fi
 # notices (two possible OK positions), then Start Game, world row, Start Game

@@ -66,7 +66,7 @@ them again from their official sources; `THIRD_PARTY.md` names each one.
 ## Dev setup
 
 The dev tools assume Palworld in `C:\Program Files (x86)\Steam\steamapps\common\Palworld`, a 1920x1080
-window and this repo at `C:\Users\Admin\PalCraft`. Adjust the paths in `tools/*.sh` on another PC.
+window and this repo at `C:\Users\Admin\Desktop\repos\PalCraft`. Adjust the paths in `tools/*.sh` on another PC.
 
 1. Close Palworld. Move the installed `Pal\Binaries\Win64\Mods\PalCraft` folder to
    `build\installed_backup\PalCraft` and make a junction from that Mods path to `host\lua\PalCraft`.

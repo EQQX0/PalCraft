@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # During a Melty test: wait for run $1 to start Palworld, click through the title screen into the first world,
 # then print the self-test checks. Click positions are for a 1920x1080 window.
-cd /c/Users/Admin/PalCraft
+cd /c/Users/Admin/Desktop/repos/PalCraft
 run=$1
 for i in $(seq 1 90); do
   r=$(python -c "

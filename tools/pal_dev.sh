@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Dev: start Palworld (if it is not running), click through its title screen into the first world and wait
 # until the player exists. Click positions are for a 1920x1080 window.
-cd /c/Users/Admin/PalCraft
+cd /c/Users/Admin/Desktop/repos/PalCraft
 inworld() { python tools/repl.py "local pc=FindFirstOf('PlayerController'); P(pc:GetFullName():find('PL_MainWorld') and pc.Pawn:IsValid() and 'inworld' or 'no')" | grep -q inworld; }
 bash tools/pal_up.sh || exit 1
 if inworld; then echo inworld; exit 0; fi
