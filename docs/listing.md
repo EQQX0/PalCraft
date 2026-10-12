@@ -21,7 +21,7 @@ You start in survival with a kit: iron sword, bow and arrows, iron pickaxe, buil
 
 Press **F8** and Palworld takes the keyboard and mouse. Its rules and its menus are yours, and Steve stays on screen as your character, walking, crouching, swimming, gliding and swinging where Palworld's own would. Press **F8** again for Minecraft's controls.
 
-The HUD stays Minecraft's. The hearts show your Palworld character's health, the hunger bar its stomach and the experience bar its level. The hotbar holds Palworld's tools as Minecraft items, in the slots Palworld's number keys pick: a stone pickaxe for the Stone Pickaxe, a bow for a bow, a crossbow for a gun. Your Pal Spheres sit in the last slot with their count. A tool that takes rounds shows the rounds loaded on its slot and the rounds you carry beside the hotbar. Minecraft's crosshair marks the point Palworld aims at.
+The HUD stays Minecraft's. The hearts show your Palworld character's health, the hunger bar its stomach and the experience bar its level. The hotbar holds Palworld's tools as Minecraft items, in the order the mouse wheel picks them: a stone pickaxe for the Stone Pickaxe, a bow for a bow, a crossbow for a gun. Your Pal Spheres sit in the last slot with their count. A tool that takes rounds shows the rounds loaded on its slot and the rounds you carry beside the hotbar. Minecraft's crosshair marks the point Palworld aims at.
 
 Open Palworld's inventory and Steve stands in it. Palworld keeps what Minecraft has no picture for: prompts, the compass, your Pal party and boss bars. Minecraft's HUD steps back while another Palworld menu, build mode, a conversation, a cutscene or the defeat screen is up.
 
@@ -88,10 +88,10 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 - Nights are cold. Hold a torch, stand by a fire or wear leather.
 - Your Palworld character stays hidden and follows Steve. If a single blow kills it outright, press F8 and respawn in Palworld.
 - Chests, Pal Spheres and Palworld menus need F8 first.
-- In Palworld mode the number keys pick Palworld's tools. Steve's own items wait in his inventory until you press F8.
+- In Palworld mode the mouse wheel picks Palworld's tools. Steve's own items wait in his inventory until you press F8.
 - Steve stands 1.9 m tall and 0.9 m wide. When a wall pushes Palworld's camera close, he covers more of the picture than Palworld's character would.
 - Steve is wider than Palworld's character, so he covers more of an over-the-shoulder conversation shot.
-- Riding, bows, guns and raids are untested in Palworld mode.
+- Tree chopping and the bow work in Palworld mode. Riding, guns and raids are untested there.
 
 ## Credits
 
