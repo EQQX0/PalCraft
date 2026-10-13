@@ -22,7 +22,7 @@ The two games talk through two shared-memory files, `frames.shm` and `bridge.shm
 
 State of 2026-10-13, afternoon.
 
-- **Melty:** 0.2.2 was published on 2026-10-13 and went into Melty's safety review; `mod_status` names the live version (0.2.1 until the review passes). Page: https://melty.gg/m/palcraft-6. Mod id
+- **Melty:** 0.2.2 is live since 2026-10-13 (`mod_status` confirmed it at 12:53 UTC). Page: https://melty.gg/m/palcraft-6. Mod id
   `bbee49ad-dee7-4100-8bdb-020e22bcc147`. The owner asked for "updated" in the title: it reads
   "PalCraft | Updated". Melty's numbers for 0.2.1: 30 Plays started, 9 crashed.
 - **Melty's test of 0.2.2 passed** on 2026-10-13: 2 runs of 6 minutes, no crash, all 5 self-checks, test `0d39b797-8fb2-4d45-9e04-82068e2176ea`. Both runs entered "PalCraft Test" by clicks (`tools/pal.sh`): the world list sorts by last played, so look at the screenshot before choosing a row.

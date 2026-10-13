@@ -184,6 +184,6 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
     linked and stays flat unlinked. The Lua heap is flat. Cause not found (HANDOFF.md, "Where things stand").
   - **Melty's test of 0.2.2 passed** on 2026-10-13: 2 runs of 6 minutes, no crash, all 5 self-checks, test `0d39b797-8fb2-4d45-9e04-82068e2176ea`. Both runs entered "PalCraft Test" by clicks (`tools/pal.sh`): the world list sorts by last played, so look at the screenshot before choosing a row.
   - The owner: "publish and push in github add in melty that its fixed and add updated in title".
-    0.2.2 was published on 2026-10-13 and went into Melty's safety review; `mod_status` names the live version (0.2.1 until the review passes). Title on Melty: "PalCraft | Updated". The page's first lines say what 0.2.2 fixes.
+    0.2.2 is live since 2026-10-13 (`mod_status` confirmed it at 12:53 UTC). Title on Melty: "PalCraft | Updated". The page's first lines say what 0.2.2 fixes.
   - The owner feared a muted release ("i only said mute cuz i was playing game"). The mute was Windows'
     mixer on my test processes. Nothing in the mod touches sound. `mute_games.ps1 -Unmute` ran afterwards.
