@@ -186,6 +186,31 @@ public final class Protocol {
 	public static final int RAY_SIZE = 24;
 	public static final int HIT_SIZE = 32;
 
+	// Co-op: the other players of the Palworld session (PlayerTable), relative to OFF_PLAYERS
+	public static final int OFF_PLAYERS = 0x002000;
+	public static final int MAX_PLAYERS = 32;
+	public static final int PL_SEQ = 0x00;
+	public static final int PL_COUNT = 0x04;
+	public static final int PL_FRAME = 0x08;
+	public static final int PL_ROWS = 0x10;
+	public static final int PLAYER_SIZE = 0x80;
+	// PlayerRow
+	public static final int PR_ID = 0x00;
+	public static final int PR_FLAGS = 0x08;
+	public static final int PR_HEALTH = 0x0C;
+	public static final int PR_POS = 0x10;
+	public static final int PR_YAW = 0x1C;
+	public static final int PR_PITCH = 0x20;
+	public static final int PR_NAME = 0x30;
+	public static final int PR_NAME_LEN = 32;
+	public static final int PR_TOOL = 0x50;
+	public static final int PR_TOOL_LEN = 48;
+	// PlayerRow.flags
+	public static final int PLAYER_CROUCH = 1;
+	public static final int PLAYER_SWIM = 1 << 1;
+	public static final int PLAYER_DEAD = 1 << 2;
+	public static final int PLAYER_ACT = 1 << 3;
+
 	// Entity table (ErmcEntityTable), relative to OFF_ENTITIES
 	public static final int OFF_ENTITIES = 0x200000;
 	public static final int MAX_ENTITIES = 256;

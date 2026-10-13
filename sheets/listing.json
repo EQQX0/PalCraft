@@ -6,7 +6,7 @@
     ["slug",         "id",     "palcraft-6"],
     ["mod_id",       "id",     "bbee49ad-dee7-4100-8bdb-020e22bcc147"],
     ["tagline",      "text",   "Play Palworld as Steve: Minecraft survival, blocks, armor and weapons on the Palpagos Islands."],
-    ["version",      "text",   "0.2.1"],
+    ["version",      "text",   "0.2.2"],
     ["players",      "choice", "single player"],
     ["license",      "choice", "MIT"],
     ["remix",        "choice", "allowed"],

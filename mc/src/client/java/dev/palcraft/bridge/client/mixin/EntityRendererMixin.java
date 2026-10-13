@@ -1,5 +1,6 @@
 package dev.palcraft.bridge.client.mixin;
 
+import dev.palcraft.bridge.client.CoopSteve;
 import dev.palcraft.bridge.client.HostBody;
 import dev.palcraft.bridge.gen.Tune;
 import net.minecraft.client.player.LocalPlayer;
@@ -15,6 +16,7 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * System "steve_body": Palworld lights its own night; Minecraft's would leave Steve a black shape in it.
  * And a camera that a wall has pushed against Steve's back shows the world, not the back.
+ * System "coop_players": a friend's Minecraft player stands in Palworld's night too.
  */
 @Mixin(EntityRenderer.class)
 public abstract class EntityRendererMixin {
@@ -28,7 +30,7 @@ public abstract class EntityRendererMixin {
 
 	@Inject(method = "getPackedLightCoords", at = @At("RETURN"), cancellable = true)
 	private void palcraft$bodyLight(Entity entity, float partialTicks, CallbackInfoReturnable<Integer> cir) {
-		if (entity instanceof LocalPlayer && HostBody.active()) {
+		if ((entity instanceof LocalPlayer && HostBody.active()) || entity instanceof CoopSteve) {
 			int packed = cir.getReturnValue();
 			int block = Math.max(LightTexture.block(packed), (int) Tune.BODY_MIN_LIGHT);
 			cir.setReturnValue(LightTexture.pack(block, LightTexture.sky(packed)));

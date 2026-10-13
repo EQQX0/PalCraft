@@ -1,0 +1,29 @@
+--- a/mc/src/main/java/dev/palcraft/bridge/TerrainManager.java
++++ b/mc/src/main/java/dev/palcraft/bridge/TerrainManager.java
+@@ -348,3 +354,6 @@ public final class TerrainManager {
+ 			for (ServerPlayer player : players) {
+-				floorAround(level, player.chunkPosition());
++				// A floor only under a falling Steve: the flat one over 5x5 chunks outlived Palworld's loading.
++				if (player.fallDistance > 2 && !player.getAbilities().flying && !player.isSpectator()) {
++					placeFloor(level, player.position());
++				}
+ 			}
+@@ -490,2 +533,12 @@ public final class TerrainManager {
+ 		int n = 0;
++		if (priority) {
++			// The way ahead first: the 2 s refresh of the ring around Steve alone can fill every batch.
++			for (Forecast forecast : forecasts) {
++				ServerPlayer player = forecast.player();
++				for (int i = 1; i <= 5; i++) {
++					n = sampleAround(map, Mth.lerp(i / 5.0, player.getX(), forecast.aheadX()), player.getY(),
++						Mth.lerp(i / 5.0, player.getZ(), forecast.aheadZ()), 2, n, true, player.getX(), player.getZ());
++				}
++			}
++		}
+ 		for (ServerPlayer player : players) {
+@@ -564,3 +617,4 @@ public final class TerrainManager {
+ 		boolean obstacle = false;
+-		for (int ray = down + 2; ray < down + RAYS_PER_COLUMN; ray++) {
++		// From the body row up: what only the ankle row touches is under step_height_m, not a 3 m wall.
++		for (int ray = down + 2 + raysPerHeight; ray < down + RAYS_PER_COLUMN; ray++) {
+ 			double height = PROBE_HEIGHTS[(ray - down - 2) / raysPerHeight];

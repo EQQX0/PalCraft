@@ -6,6 +6,7 @@ local M = {}
 
 local carried = false
 local hidden = false
+local soft = false
 local halfHeight = 88
 
 local function movement(pawn, mode)
@@ -51,39 +52,25 @@ local gear = {}
 local gearTick = 0
 local WEAPON
 -- The tool Palworld stows on the character's back while a sphere is in its hand is a third kind of actor:
--- attached to the character, owned by nobody. Searching all of Palworld's objects for them takes tens of
--- milliseconds: do it once, then let Palworld tell us about each new one.
-local backs = {}
-local watching = false
-local function watch_backs()
-    if watching then return end
-    watching = true
-    for _, a in ipairs(FindAllOf("PalBackWeaponBase") or {}) do
-        if a:IsValid() then backs[a:GetAddress()] = a end
-    end
-    local gen = _G.PALCRAFT_GEN
-    NotifyOnNewObject("/Script/Pal.PalBackWeaponBase", function(a)
-        if gen ~= _G.PALCRAFT_GEN then return true end
-        backs[a:GetAddress()] = a
-    end)
-end
+-- fastened to the character's mesh, owned by nobody. Palworld's list of what hangs on the mesh leads to it.
+local BACK
 local function each_tool(pawn, fn)
     WEAPON = WEAPON or StaticFindObject("/Script/Pal.PalWeaponBase")
+    BACK = BACK or StaticFindObject("/Script/Pal.PalBackWeaponBase")
     if not WEAPON or not WEAPON:IsValid() then return end
     pawn.Children:ForEach(function(_, e)
         local a = e:get()
         if a and a:IsValid() and a:IsA(WEAPON) then fn(a) end
     end)
-    watch_backs()
-    local me = pawn:GetAddress()
-    for at, a in pairs(backs) do
-        if not a:IsValid() then
-            backs[at] = nil
-        else
-            local on = a:GetAttachParentActor()
-            if on and on:IsValid() and on:GetAddress() == me then fn(a) end
+    local mesh = pawn.Mesh
+    if not (BACK and BACK:IsValid() and mesh and mesh:IsValid()) then return end
+    mesh.AttachChildren:ForEach(function(_, e)
+        local c = e:get()
+        if c and c:IsValid() then
+            local a = c:GetOwner()
+            if a and a:IsValid() and a:IsA(BACK) then fn(a) end
         end
-    end
+    end)
 end
 local function hide_gear(pawn)
     each_tool(pawn, function(a)
@@ -117,20 +104,40 @@ local function keep_posing(pawn)
     posed = at
 end
 
-function M.hide(pawn, want)
+-- Unreal sends a host's hidden actors to every PC of the session: a friend without PalCraft would see
+-- nobody where the host stands. With friends in the world the body is hidden as a mesh instead, which
+-- stays on this PC and takes everything fastened to it along: clothes, hair, the tools.
+local function set_hidden(pawn, want, asMesh)
+    if asMesh then
+        local mesh = pawn.Mesh
+        if mesh and mesh:IsValid() then mesh:SetVisibility(not want, true) end
+    else
+        pawn:SetActorHiddenInGame(want)
+        if not want then U.guard("gear", function() show_gear(pawn) end) end
+    end
+end
+
+-- friends = other players are in the world.
+function M.hide(pawn, want, friends)
     if not (pawn and pawn:IsValid()) then return end
     want = want and true or false
+    friends = friends and true or false
+    if hidden and friends ~= soft then -- a friend came or the last one left: hide it the other way
+        set_hidden(pawn, false, soft)
+        hidden = false
+    end
+    soft = friends
     if want ~= hidden then
         if want then U.guard("posing", function() keep_posing(pawn) end) end
-        pawn:SetActorHiddenInGame(want)
+        set_hidden(pawn, want, soft)
         hidden = want
         gearTick = 0
-        if not want then U.guard("gear", function() show_gear(pawn) end) end
     end
     if hidden then
         if gearTick <= 0 then
             gearTick = P.tune.gear_scan_ticks
-            U.guard("gear", function() hide_gear(pawn) end)
+            if soft then set_hidden(pawn, true, true) -- a newly equipped tool is a new part
+            else U.guard("gear", function() hide_gear(pawn) end) end
         end
         gearTick = gearTick - 1
     end

@@ -28,7 +28,7 @@ local RUNTIME = runtime_dir()
 local DEV = exists(RUNTIME .. "dev_enabled")
 print("[PalCraft] loading, runtime " .. RUNTIME .. "\n")
 
-for _, name in ipairs({ "gen_protocol", "util", "shm", "camera", "standin", "life", "rays", "probe", "body", "hud", "entities", "combat", "selftest", "bridge", "dev" }) do
+for _, name in ipairs({ "gen_protocol", "util", "shm", "camera", "standin", "life", "rays", "probe", "body", "hud", "players", "entities", "combat", "selftest", "bridge", "dev" }) do
     package.loaded[name] = nil
 end
 local U = require("util")

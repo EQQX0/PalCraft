@@ -28,6 +28,8 @@ def run(src: str, timeout: float = 20.0) -> str:
             except OSError:
                 pass
         time.sleep(0.05)
+    # Left behind, the script would run whenever the game next looks: at a title screen, perhaps.
+    (RUNTIME / "dev_in.lua").unlink(missing_ok=True)
     return "TIMEOUT (is the game running with the mod and dev_enabled?)\n"
 
 
@@ -37,4 +39,4 @@ if __name__ == "__main__":
         code = Path(args[1]).read_text(encoding="utf-8")
     else:
         code = " ".join(args)
-    sys.stdout.write(run(code))
+    sys.stdout.buffer.write(run(code).encode("utf-8", "replace"))  # player names are not always ASCII

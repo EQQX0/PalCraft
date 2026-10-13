@@ -118,6 +118,9 @@ public final class CameraSync {
 		Minecraft mc = Minecraft.getInstance();
 		CoordMap.Mapping map = CoordMap.get();
 		boolean haveState = ErLink.get().snapshot(STATE);
+		if (map != null && haveState && !map.provisional() && map.zone() == STATE.stageId) {
+			CoopPlayers.place(map);
+		}
 		if (HostBody.active() && map != null && haveState && STATE.has(Protocol.STATE_CAMERA_VALID)
 				&& STATE.has(Protocol.STATE_PLAYER_VALID) && !map.provisional() && map.zone() == STATE.stageId) {
 			followHostBody(mc, map, camera);

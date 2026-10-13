@@ -19,12 +19,15 @@ function M.tick(env)
         dead = cp ~= nil and cp:IsValid() and cp:IsDead()
     end
     env.dead = dead
+    -- Palworld spawns the character 10 km up and places it once the world has loaded: not usable up there.
+    local placed = env.hasPawn and env.pawn:K2_GetActorLocation().Z / 100 < P.tune.world_ceiling_m
+    env.placed = placed
     -- Palworld mode keeps drawing through a defeat: Steve lies where the character fell. In Minecraft mode
     -- Palworld's defeat screen is its own.
     local body = (env.cflags or 0) & P.ctrl.HOST_BODY ~= 0
-    env.busy = not env.hasPawn or (dead and not body)
+    env.busy = not placed or (dead and not body)
     if dead and not wasDead then bump(H.hostDeaths) end
-    local usable = env.hasPawn and not dead
+    local usable = placed and not dead
     if usable and not wasUsable then bump(H.hostLife) end
     wasUsable, wasDead = usable, dead
 

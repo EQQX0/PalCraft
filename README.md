@@ -135,6 +135,27 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 
 Every other key is Minecraft's own.
 
+## New in 0.2.2
+
+- Fixed: Palworld crashed about a minute into a world. The mod kept its references to Palworld's objects
+  from one frame to the next, and Palworld frees objects in between. Each frame now starts from the player
+  controller Palworld hands over and asks for the rest again.
+- Fixed: Palworld crashed in three world loads of four. The mod hooked a Blueprint function, and UE4SS
+  3.0.1 then inspects every Blueprint call Palworld makes on every thread. The frame loop now hangs on a
+  built-in function Palworld's HUD calls once per frame. In 6 test loads after the change Palworld crashed
+  once: see the limits.
+- Fixed: Steve began some worlds 10 km up and fell. Palworld keeps the character up there until the world is
+  in; Steve now waits for it to come down.
+- Fixed: Steve fell through ground Palworld had not answered for yet. A ray that finds no ground leaves the
+  ground you stand on alone. After a 12 m fall with no ground known, Steve goes back where he last stood.
+- Fixed: Steve stuck on Palworld's slopes. He walks up steps of 1.1 blocks.
+- Fixed: Minecraft froze at a render distance its memory cannot hold. PalCraft caps render and simulation
+  distance.
+- Fixed: a Pal waiting in your party showed as a creature in the sky above you.
+- Faster: Minecraft no longer waits for the screen's refresh between frames, and Palworld spends less time on
+  terrain rays.
+- An unclean Minecraft exit no longer leaves its last camera and carry orders behind for the next start.
+
 ## New in 0.2.1
 
 - Palworld mode shows Steve. In 0.2.0 F8 showed Palworld's own character.
@@ -157,9 +178,12 @@ Every other key is Minecraft's own.
 - A kit that gained items in an update tops itself up for existing players.
 - Palworld's menus and prompts draw over Minecraft's blocks and over Steve.
 
-## Limits in 0.2.1
+## Limits in 0.2.2
 
-- Single player. The bridge has room for co-op and 0.2.1 does not use it.
+- Single player. Co-op is built and switched off until two people have played it.
+- Palworld can still crash while a world loads: once in 6 test loads. The cause sits in a setting of the
+  UE4SS loader Melty installs (`bUseUObjectArrayCache`), and a mashup may not change that file. Press Play
+  again.
 - DirectX 11 only. Remove `-dx12` from Palworld's Steam launch options if you added it.
 - Minecraft's picture crosses to Palworld through main memory. PalCraft starts at the sharpest size under 4.2
   megapixels and steps down a size if Minecraft drops below 70 frames a second. On a 1440p screen that means
@@ -171,7 +195,7 @@ Every other key is Minecraft's own.
 - Your Palworld character stays hidden and follows Steve. PalCraft refills its health while Steve lives, so a
   hit costs Steve hearts and leaves the character alive. If a single blow kills the character outright, press
   F8 and respawn in Palworld.
-- The G key asks Palworld to interact, and 0.2.1 answers "unsupported". Use F8 for chests, Pal Spheres and
+- The G key asks Palworld to interact, and 0.2.2 answers "unsupported". Use F8 for chests, Pal Spheres and
   menus.
 - In Palworld mode the mouse wheel picks Palworld's tools. Steve's own items wait in his inventory until you press F8.
 - Steve stands 1.9 m tall and 0.9 m wide. When a wall pushes Palworld's camera close, he covers more of the picture than Palworld's character would.
@@ -210,7 +234,7 @@ cd mc && gradlew.bat build
 python tools/package.py
 ```
 
-`tools/package.py` writes `dist/PalCraft-0.2.1.zip` (the Palworld mod) and `dist/PalCraft-Minecraft-0.2.1.zip`
+`tools/package.py` writes `dist/PalCraft-0.2.2.zip` (the Palworld mod) and `dist/PalCraft-Minecraft-0.2.2.zip`
 (Prism Launcher with the PalCraft instance). You need llvm-mingw and JDK 21 or newer on your PATH. The script
 expects the Prism Launcher portable zip, the Fabric API jar and the AppleSkin jar in `.tools/dl/`.
 

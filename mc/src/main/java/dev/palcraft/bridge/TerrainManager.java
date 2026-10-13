@@ -1,5 +1,6 @@
 package dev.palcraft.bridge;
 
+import dev.palcraft.bridge.gen.Tune;
 import dev.palcraft.bridge.link.GameState;
 import dev.palcraft.bridge.link.ErLink;
 import dev.palcraft.bridge.link.Protocol;
@@ -58,7 +59,7 @@ public final class TerrainManager {
 	 * this is found by the high ray.
 	 */
 	private static final double RAY_ABOVE = 2.2;
-	private static final double RAY_BELOW = 40.0;
+	private static final double RAY_BELOW = Tune.RAY_BELOW_M;
 	/** Solid terrain thickness below the host game's surface. */
 	private static final int THICKNESS = 2;
 	/** Probe feet, body and head, including both diagonals and both segment directions. */
@@ -114,6 +115,8 @@ public final class TerrainManager {
 	private static volatile boolean bridgeWorld;
 	private static final java.util.Set<Long> WAITING_DETAIL = java.util.concurrent.ConcurrentHashMap.newKeySet();
 	private static final java.util.Map<java.util.UUID, Vec3> LAST_POSITIONS = new java.util.HashMap<>();
+	/** Where each player last stood on the ground in Minecraft mode. */
+	private static final java.util.Map<java.util.UUID, Vec3> LAST_SAFE = new java.util.HashMap<>();
 	private static boolean preferBackground;
 	private static boolean preferTravel = true;
 	private static long coarseBatches, lastBatchMs, maxBatchMs;
@@ -147,6 +150,7 @@ public final class TerrainManager {
 		bridgeWorld = false;
 		WAITING_DETAIL.clear();
 		LAST_POSITIONS.clear();
+		LAST_SAFE.clear();
 		PLATFORM_MOTION.clear();
 		MOVING_COLUMNS.clear();
 		preferBackground = false;
@@ -332,8 +336,10 @@ public final class TerrainManager {
 			}
 			updateAnchor(server);
 			int gen = RECALL_GEN.get();
+			// A character outside the block world is one Palworld has not placed yet: wait for it.
 			if (gen != recallDone && STATE.has(Protocol.STATE_PLAYER_VALID) && CoordMap.get() != null
-				&& !server.getPlayerList().getPlayers().isEmpty()) {
+				&& !server.getPlayerList().getPlayers().isEmpty() && !server.overworld().isOutsideBuildHeight(
+					Mth.floor(CoordMap.get().toMc(STATE.playerPos[0], STATE.playerPos[1], STATE.playerPos[2]).y))) {
 				for (ServerPlayer p : server.getPlayerList().getPlayers()) {
 					teleportToHunter(server.overworld(), p, CoordMap.get());
 				}
@@ -346,7 +352,10 @@ public final class TerrainManager {
 		List<ServerPlayer> players = server.getPlayerList().getPlayers();
 		if (map == null || map.provisional() || !alive || rayMode < 0) {
 			for (ServerPlayer player : players) {
-				floorAround(level, player.chunkPosition());
+				// A floor only under a falling Steve: the flat one over 5x5 chunks outlived Palworld's loading.
+				if (player.fallDistance > 2 && !player.getAbilities().flying && !player.isSpectator()) {
+					placeFloor(level, player.position());
+				}
 			}
 			return;
 		}
@@ -383,6 +392,9 @@ public final class TerrainManager {
 		TerrainDetailManager.discover(level, players);
 		List<Forecast> forecasts = new ArrayList<>();
 		for (ServerPlayer player : players) {
+			var step = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.STEP_HEIGHT);
+			if (step != null && step.getBaseValue() != Tune.STEP_HEIGHT_M) step.setBaseValue(Tune.STEP_HEIGHT_M);
+			guardFall(level, player);
 			Vec3 previous = LAST_POSITIONS.put(player.getUUID(), player.position());
 			Vec3 velocity = previous == null ? Vec3.ZERO : player.position().subtract(previous).scale(20);
 			Vec3 look = player.getViewVector(1);
@@ -406,6 +418,37 @@ public final class TerrainManager {
 			if (!TerrainTravelClearance.busy()) preferTravel = true;
 		}
 		logAttrStats();
+	}
+
+	/** Safety net: fallen fall_rescue_m with no ground known under him, Steve goes back to where he last stood. */
+	private static void guardFall(ServerLevel level, ServerPlayer player) {
+		if (HostBodyServer.hostMode || !recallSettled(1000) || !player.isAlive() || player.isSpectator()
+			|| player.getAbilities().flying || player.isFallFlying() || player.isInWater()) {
+			return;
+		}
+		Vec3 at = player.position();
+		if (player.onGround()) {
+			LAST_SAFE.put(player.getUUID(), at);
+			return;
+		}
+		Vec3 safe = LAST_SAFE.get(player.getUUID());
+		if (safe == null || at.y > safe.y - Tune.FALL_RESCUE_M) {
+			return;
+		}
+		Column c = COLUMNS.get(ChunkPos.asLong(Mth.floor(at.x), Mth.floor(at.z)));
+		boolean ground = c != null && c.floorBlock() != Integer.MIN_VALUE && c.floorBlock() < at.y;
+		boolean answered = c != null && c.sample() != null && Math.abs(c.sample().y() - at.y) < Tune.FALL_RESCUE_M;
+		if (ground || (!answered && at.y > safe.y - 3 * Tune.FALL_RESCUE_M)) {
+			return; // ground to land on, or its rays are still out
+		}
+		// After a jump over a long way (/tp, flight) he is held where he is.
+		Vec3 to = Math.hypot(at.x - safe.x, at.z - safe.z) <= 4 * Tune.FALL_RESCUE_M ? safe : at;
+		placeFloor(level, to);
+		player.teleportTo(level, to.x, Math.ceil(to.y * 16 - 1e-4) / 16 + 0.01, to.z, player.getYRot(), player.getXRot());
+		player.fallDistance = 0;
+		LAST_SAFE.put(player.getUUID(), to);
+		LOG.info("{} fell {} m with no Palworld ground under him: back to {}", player.getName().getString(),
+			Math.round(safe.y - at.y), to);
 	}
 
 	private static void updateMovingSupport(ServerLevel level, CoordMap.Mapping map, List<ServerPlayer> players) {
@@ -488,6 +531,16 @@ public final class TerrainManager {
 		INVALIDATED_PENDING.clear();
 		BATCH_KEYS.clear();
 		int n = 0;
+		if (priority) {
+			// The way ahead first: the 2 s refresh of the ring around Steve alone can fill every batch.
+			for (Forecast forecast : forecasts) {
+				ServerPlayer player = forecast.player();
+				for (int i = 1; i <= 5; i++) {
+					n = sampleAround(map, Mth.lerp(i / 5.0, player.getX(), forecast.aheadX()), player.getY(),
+						Mth.lerp(i / 5.0, player.getZ(), forecast.aheadZ()), 2, n, true, player.getX(), player.getZ());
+				}
+			}
+		}
 		for (ServerPlayer player : players) {
 			n = sampleAround(map, player.getX(), player.getY(), player.getZ(), priority ? TerrainPrefetch.NEAR_RADIUS : SAMPLE_RADIUS,
 				n, priority, player.getX(), player.getZ());
@@ -562,7 +615,8 @@ public final class TerrainManager {
 	private static boolean columnObstacle(int down, double groundY, double sampleY, CoordMap.Mapping map) {
 		int raysPerHeight = TerrainClearance.WALL_SEGMENTS.size() * 2;
 		boolean obstacle = false;
-		for (int ray = down + 2; ray < down + RAYS_PER_COLUMN; ray++) {
+		// From the body row up: what only the ankle row touches is under step_height_m, not a 3 m wall.
+		for (int ray = down + 2 + raysPerHeight; ray < down + RAYS_PER_COLUMN; ray++) {
 			double height = PROBE_HEIGHTS[(ray - down - 2) / raysPerHeight];
 			obstacle |= isObstacle(ray, groundY, sampleY + height, map);
 		}
@@ -665,9 +719,13 @@ public final class TerrainManager {
 				height = Mth.clamp((int) Math.ceil((groundY - topBlock) * 16.0 - 1e-3), 1, 16);
 				obstacle = columnObstacle(down, groundY, sampleY, map);
 				top = topBlock;
-				bottom = hillHit ? Math.min(topBlock, Mth.floor(sampleY) - THICKNESS) : topBlock - THICKNESS;
+				// "Solid right here" (a ray that began inside a hill) is solid under Steve's feet too.
+				boolean inside = lowHit && groundY >= sampleY + RAY_ABOVE - 1e-3;
+				bottom = hillHit || inside ? Math.min(topBlock, Mth.floor(sampleY) - THICKNESS) : topBlock - THICKNESS;
 				if (obstacle) {
 					top = Math.max(topBlock, Mth.floor(sampleY + WALL_HEIGHT));
+					// A wall over a drop is the wall, not a pillar up from the ground far below.
+					bottom = Math.max(bottom, Mth.floor(sampleY - CLIFF_FILL) - THICKNESS);
 				}
 			} else {
 				obstacle = columnObstacle(down, groundY, sampleY, map);
@@ -678,6 +736,13 @@ public final class TerrainManager {
 					top = Mth.floor(sampleY + WALL_HEIGHT);
 					bottom = Mth.floor(sampleY) - THICKNESS;
 				}
+			}
+			if (top == Integer.MIN_VALUE) {
+				// No answer is not open air (landscape not loaded, ray began under a one-sided surface, a Pal in
+				// the way): the column keeps what it holds until an answer finds ground.
+				COLUMNS.put(key, new Column(new TerrainPrefetch.Sample(sampleY, request.fromX(), request.fromZ(), now),
+					old.top(), old.bottom(), old.sample() == null ? Integer.MIN_VALUE : old.floorBlock(), old.height(), old.obstacle()));
+				continue;
 			}
 			// Refresh evidence without replacing an unchanged, already refined arch with full cubes.
 			boolean changed = old.sample() == null || old.top() != top || old.bottom() != bottom

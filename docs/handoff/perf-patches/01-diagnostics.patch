@@ -1,0 +1,52 @@
+diff --git a/host/native/src/palcraft.cpp b/host/native/src/palcraft.cpp
+index 3be950d..4cd2076 100644
+--- a/host/native/src/palcraft.cpp
++++ b/host/native/src/palcraft.cpp
+@@ -881,3 +881,3 @@ static bool mc_alive() {
+ 
+-static uint32_t g_syncExact = 0, g_syncOlder = 0, g_syncMissing = 0, g_syncUntagged = 0;
++static uint32_t g_syncExact = 0, g_syncOlder = 0, g_syncMissing = 0, g_syncUntagged = 0, g_syncOwn = 0;
+ 
+@@ -914,7 +914,8 @@ static void composite(const LuaView& lua, UINT bbW, UINT bbH) {
+         else if (slot) g_syncOlder++;
+-        else g_syncMissing++;
+-        if (g_syncExact + g_syncOlder + g_syncMissing >= 600) {
+-            log("sync: frames with the presented pose: exact %u, older %u, missing %u (untagged %u)", g_syncExact,
+-                g_syncOlder, g_syncMissing, g_syncUntagged);
+-            g_syncExact = g_syncOlder = g_syncMissing = g_syncUntagged = 0;
++        else if (poseId) g_syncMissing++;
++        else g_syncOwn++;  // a cutscene or a conversation: Palworld's own camera, and no Minecraft world is due
++        if (g_syncExact + g_syncOlder + g_syncMissing + g_syncOwn >= 600) {
++            log("sync: frames with the presented pose: exact %u, older %u, missing %u (untagged %u, own view %u)",
++                g_syncExact, g_syncOlder, g_syncMissing, g_syncUntagged, g_syncOwn);
++            g_syncExact = g_syncOlder = g_syncMissing = g_syncUntagged = g_syncOwn = 0;
+         }
+diff --git a/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java b/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
+index 3b01c69..768808a 100644
+--- a/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
++++ b/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
+@@ -164,2 +164,3 @@ public final class FramePassthrough {
+ 	private static int rendered, captures, published, waitingCapture, waitingHost;
++	private static long copyNanos, copiedLayers;
+ 	private static boolean worldCaptured;
+@@ -357,5 +358,7 @@ public final class FramePassthrough {
+ 			double seconds=(now-statsAt)/1_000_000_000.0;
+-			LOG.info("Capture pipeline: rendered {} fps, captured {} fps, published {} fps, pending skips {}, host-buffer skips {}",
+-				Math.round(rendered/seconds),Math.round(captures/seconds),Math.round(published/seconds),waitingCapture,waitingHost);
+-			statsAt=now; rendered=captures=published=waitingCapture=waitingHost=0;
++			LOG.info("Capture pipeline: rendered {} fps, captured {} fps, published {} fps, pending skips {}, host-buffer skips {}, "
++					+ "copy {} ms a frame for {} layers",
++				Math.round(rendered/seconds),Math.round(captures/seconds),Math.round(published/seconds),waitingCapture,waitingHost,
++				String.format("%.2f",copyNanos/1.0e6/Math.max(1,published)),String.format("%.1f",copiedLayers/(double)Math.max(1,published)));
++			statsAt=now; rendered=captures=published=waitingCapture=waitingHost=0; copyNanos=copiedLayers=0;
+ 		}
+@@ -417,3 +420,5 @@ public final class FramePassthrough {
+ 		boolean hand = HAND[set];
++		long copyFrom = System.nanoTime();
+ 		for (int i = 0; !GPU_FRAME[set] && i < (hand ? 4 : 3); i++) {
++			copiedLayers++;
+ 			GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, PBO[set][i]);
+@@ -428,2 +433,3 @@ public final class FramePassthrough {
+ 		GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
++		copyNanos += System.nanoTime() - copyFrom;
+ 		frames.putInt(base + 0x04, w);

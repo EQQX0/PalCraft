@@ -4,23 +4,44 @@ local P = require("gen_protocol")
 local U = require("util")
 local M = {}
 
-local cam            -- our CameraActor
 local onCam = false  -- the player's view target is our camera
 local yielding = false -- Palworld took the view for a cutscene; ours is waiting
-local tags = {}      -- frame tag render targets
 local KRL, UI, KSL
 local black = { R = 0, G = 0, B = 0, A = 1 }
 local ARM_END = FName("SpringEndpoint")
 
+local CAMERA, CAPTURE
+local TAGS, TAG_W, TAG_H = P.const.TAG_COUNT, P.const.TAG_BASE_W, P.const.TAG_H
+
+-- Our camera is an actor this mod spawns and gives to the player controller. No handle of it is kept (see
+-- util.lua): Palworld's own list of what the controller owns leads to it, once per tick.
+local tickPc, tickCam, tickLooked
+function M.frame(pc)
+    tickPc, tickCam, tickLooked = pc, nil, false
+end
+local function our_cam()
+    if tickLooked then return tickCam end
+    tickLooked = true
+    CAMERA = CAMERA or StaticFindObject("/Script/Engine.CameraActor")
+    local class = CAMERA:GetAddress()
+    tickPc.Children:ForEach(function(_, e)
+        if tickCam then return end
+        local a = e:get()
+        -- Exactly a CameraActor: Palworld's cutscene cameras are classes of their own.
+        if a and a:IsValid() and a:GetClass():GetAddress() == class then tickCam = a end
+    end)
+    return tickCam
+end
 local function ensure_cam(pawn)
-    if cam and cam:IsValid() then return cam end
-    local cls = StaticFindObject("/Script/Engine.CameraActor")
+    local cam = our_cam()
+    if cam then return cam end
     local loc = pawn:K2_GetActorLocation()
-    cam = pawn:GetWorld():SpawnActor(cls, { X = loc.X, Y = loc.Y, Z = loc.Z + 100 }, { Pitch = 0, Yaw = 0, Roll = 0 })
-    if cam and cam:IsValid() then
-        cam.CameraComponent.bConstrainAspectRatio = false
-    end
+    cam = pawn:GetWorld():SpawnActor(CAMERA, { X = loc.X, Y = loc.Y, Z = loc.Z + 100 }, { Pitch = 0, Yaw = 0, Roll = 0 })
     onCam = false
+    if not (cam and cam:IsValid()) then return nil end
+    cam.CameraComponent.bConstrainAspectRatio = false
+    cam:SetOwner(tickPc)
+    tickCam = cam
     return cam
 end
 
@@ -42,16 +63,16 @@ local function ue_fov(pc, fovY, aspect)
 end
 
 -- Palworld mode cuts the character's follow camera loose from its arm (see M.apply_body). This puts it back.
-local held, heldAt
+local heldAt
 local function free_follow(pawn)
-    local c = held
-    held, heldAt = nil, nil
-    -- A reloaded copy of this file has forgotten what it held: the component itself still knows.
-    if not c and pawn and pawn:IsValid() then
+    heldAt = nil
+    -- The component itself knows whether it was cut loose, so a reloaded copy of this file frees it too.
+    local c
+    if pawn and pawn:IsValid() then
         local f = pawn.FollowCamera
         if f and f:IsValid() and f.bAbsoluteLocation then c = f end
     end
-    if c and c:IsValid() then
+    if c then
         pcall(function()
             c:SetAbsolute(false, false, false)
             local swept = {}
@@ -81,7 +102,8 @@ function M.apply_body(pc, pawn, pos, target)
     local view = pc:GetViewTarget()
     local at = view and view:IsValid() and view:GetAddress() or 0
     if at ~= pawn:GetAddress() then
-        if cam and cam:IsValid() and at == cam:GetAddress() then
+        local cam = our_cam()
+        if cam and at == cam:GetAddress() then
             pc:SetViewTargetWithBlend(pawn, 0.0, 0, 0.0, false)
             onCam = false
         else
@@ -99,7 +121,7 @@ function M.apply_body(pc, pawn, pos, target)
     if heldAt ~= c:GetAddress() then
         free_follow(pawn)
         c:SetAbsolute(true, true, false)
-        held, heldAt = c, c:GetAddress()
+        heldAt = c:GetAddress()
     end
     local swept = {}
     c:K2_SetWorldLocationAndRotation(loc, rot, false, swept, true)
@@ -233,15 +255,42 @@ function M.own(pc, aspect)
     return { px, py, pz }, { px + fx, py + fy, pz + fz }, fovY
 end
 
--- Clears tiny render target number k: the clear reaches the graphics card just before this tick's frame,
--- and its odd size is what the native side recognises.
+-- Frame tag k is a tiny render target of a width of its own: clearing it reaches the graphics card just
+-- before this tick's frame, and the odd size is what the native side recognises.
+-- Nothing in Palworld holds such a target, and what nothing holds Palworld throws away about once a minute.
+-- The handles kept here then pointed at freed memory: the crashes of 0.2.1. Now each target hangs on a
+-- scene capture actor that never captures, the captures belong to our camera in the order of their tags, and
+-- every tick walks from the controller to the camera to capture k to its target.
+local function new_target(pawn, comp, k)
+    local rt = KRL:CreateRenderTarget2D(pawn, TAG_W + k, TAG_H, 2, black, false)
+    comp.TextureTarget = rt
+    return rt
+end
+local function new_holder(pawn, cam, k)
+    CAPTURE = CAPTURE or StaticFindObject("/Script/Engine.SceneCapture2D")
+    local loc = cam:K2_GetActorLocation()
+    local cap = pawn:GetWorld():SpawnActor(CAPTURE, { X = loc.X, Y = loc.Y, Z = loc.Z }, { Pitch = 0, Yaw = 0, Roll = 0 })
+    if not (cap and cap:IsValid()) then return nil end
+    local comp = cap.CaptureComponent2D
+    -- Off before it has a target: a capture would draw the whole world into it every frame.
+    comp.bCaptureEveryFrame = false
+    comp.bCaptureOnMovement = false
+    new_target(pawn, comp, k)
+    cap:SetOwner(cam)
+    return cap
+end
 function M.tag(pawn, k)
     KRL = KRL or StaticFindObject("/Script/Engine.Default__KismetRenderingLibrary")
-    local rt = tags[k]
-    if not rt or not rt:IsValid() then
-        rt = KRL:CreateRenderTarget2D(pawn, P.const.TAG_BASE_W + k, P.const.TAG_H, 2, black, false)
-        tags[k] = rt
+    local cam = ensure_cam(pawn)
+    if not cam then return end
+    for i = #cam.Children, TAGS - 1 do
+        if not new_holder(pawn, cam, i) then return end
     end
+    local cap = cam.Children[k + 1]
+    if not (cap and cap:IsValid()) then return end
+    local comp = cap.CaptureComponent2D
+    local rt = comp.TextureTarget
+    if not (rt and rt:IsValid() and rt.SizeX == TAG_W + k) then rt = new_target(pawn, comp, k) end
     if rt and rt:IsValid() then KRL:ClearRenderTarget2D(pawn, rt, black) end
 end
 

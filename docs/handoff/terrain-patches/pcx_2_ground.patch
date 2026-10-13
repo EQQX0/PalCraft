@@ -1,0 +1,23 @@
+--- a/mc/src/main/java/dev/palcraft/bridge/TerrainManager.java
++++ b/mc/src/main/java/dev/palcraft/bridge/TerrainManager.java
+@@ -667,5 +721,9 @@ public final class TerrainManager {
+ 				top = topBlock;
+-				bottom = hillHit ? Math.min(topBlock, Mth.floor(sampleY) - THICKNESS) : topBlock - THICKNESS;
++				// "Solid right here" (a ray that began inside a hill) is solid under Steve's feet too.
++				boolean inside = lowHit && groundY >= sampleY + RAY_ABOVE - 1e-3;
++				bottom = hillHit || inside ? Math.min(topBlock, Mth.floor(sampleY) - THICKNESS) : topBlock - THICKNESS;
+ 				if (obstacle) {
+ 					top = Math.max(topBlock, Mth.floor(sampleY + WALL_HEIGHT));
++					// A wall over a drop is the wall, not a pillar up from the ground far below.
++					bottom = Math.max(bottom, Mth.floor(sampleY - CLIFF_FILL) - THICKNESS);
+ 				}
+@@ -681,2 +739,9 @@ public final class TerrainManager {
+ 			}
++			if (top == Integer.MIN_VALUE) {
++				// No answer is not open air (landscape not loaded, ray began under a one-sided surface, a Pal in
++				// the way): the column keeps what it holds until an answer finds ground.
++				COLUMNS.put(key, new Column(new TerrainPrefetch.Sample(sampleY, request.fromX(), request.fromZ(), now),
++					old.top(), old.bottom(), old.sample() == null ? Integer.MIN_VALUE : old.floorBlock(), old.height(), old.obstacle()));
++				continue;
++			}
+ 			// Refresh evidence without replacing an unchanged, already refined arch with full cubes.

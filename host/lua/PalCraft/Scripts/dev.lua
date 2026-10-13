@@ -59,6 +59,9 @@ end
 function M.start(runtime)
     if not readfile(runtime .. "dev_enabled") then return end
     dir = runtime
+    -- A script nobody collected would run at the title screen of the next start, where it has no world to
+    -- ask: that crashed Palworld (2026-10-13).
+    os.remove(runtime .. "dev_in.lua")
     local busy = false
     local gen = _G.PALCRAFT_GEN
     _G.P = function(...)
@@ -69,7 +72,8 @@ function M.start(runtime)
     end
     -- Without a world there is no frame loop (title screen): only then does the async thread look for scripts.
     LoopAsync(500, function()
-        if gen ~= _G.PALCRAFT_GEN then return true end
+        -- PALCRAFT_DEV_QUIET: a test of a world load wants nothing of the console running beside it.
+        if gen ~= _G.PALCRAFT_GEN or _G.PALCRAFT_DEV_QUIET then return true end
         if busy or os.clock() - lastTick < 2 then return false end
         local src = readfile(runtime .. "dev_in.lua")
         if not src then return false end

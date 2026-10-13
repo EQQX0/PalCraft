@@ -39,7 +39,7 @@
     ["preview_top", 0.27, "screen heights", "mc", "and the preview reaches from this far down the screen"],
     ["preview_bottom", 0.8, "screen heights", "mc", "to this far down"],
     ["swim_feet_m", -0.1, "m", "lua", "Palworld mode, swimming: Steve lies flat with the underside of his body this far above the middle of the character (negative: below it), which puts him half out of the water"],
-    ["hud_find_ms", 5000, "ms", "lua", "Palworld mode: wait between searches for Palworld's player gauge while it is not on screen"],
+    ["hud_find_ms", 5000, "ms", "lua", "Palworld mode: wait between searches for the character preview of Palworld's inventory screen while a menu is open and none is known; a search looks at every object Palworld has, tens of milliseconds"],
     ["hud_reapply_ticks", 30, "ticks", "lua", "Palworld mode: its gauges are told to stay faded this often, since Palworld animates them"],
     ["hud_health_ticks", 6, "ticks", "lua", "the character's health is read this often for Minecraft's hearts, and Palworld is asked whether build mode is up"],
     ["gear_scan_ticks", 20, "ticks", "lua", "while the Palworld character is hidden, its tools are looked over this often, so a newly equipped one is hidden too"],
@@ -53,6 +53,16 @@
     ["shot_match_m", 0.3, "m", "lua", "Palworld's own shot (a conversation, a cutscene): Steve is drawn into it while Minecraft's frame was made within this distance of the shot's camera"],
     ["shot_match_deg", 2.5, "deg", "lua", "and within this angle and field of view"],
     ["shot_miss_ticks", 20, "ticks", "lua", "a shot that keeps moving faster than that for this long shows Palworld's own character instead"],
-    ["kill_exp_level_lead", 4, "levels", "lua", "a Pal counts as at most this many levels above the character, so an easy win over a strong Pal does not skip the early game"]
+    ["kill_exp_level_lead", 4, "levels", "lua", "a Pal counts as at most this many levels above the character, so an easy win over a strong Pal does not skip the early game"],
+    ["player_scan_ticks", 20, "ticks", "lua", "co-op: the other players' Palworld bodies are looked over this often, so a newly equipped tool is hidden too"],
+    ["player_gone_ms", 1500, "ms", "mc", "co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long"],
+    ["world_ceiling_m", 5000, "m", "lua", "a character higher than this is not in the world: Palworld keeps one it has not placed yet 10 km up (seen at 10000, 10000, 10000 m)"],
+    ["ray_below_m", 300, "m", "mc", "how far below Steve's feet a column's ground ray reaches; a miss then means no world below, not a drop"],
+    ["fall_rescue_m", 12, "m", "mc", "Steve is put back where he last stood once he has fallen this far with no Palworld ground known under him"],
+    ["step_height_m", 1.1, "m", "mc", "Steve walks up steps this high: Palworld's 45 degree slopes come out as one block per column"],
+    ["coop_enabled", 0, "0 or 1", "lua", "co-op: 1 lists the other players for Minecraft and hides their Palworld bodies; 0 until two people have played it"],
+    ["entity_far_tables", 15, "tables", "lua", "a character found far from Steve is measured again only after this many entity tables; those near him are measured for every table"],
+    ["entity_near_margin_m", 12, "m", "lua", "a character this far outside entity_radius_m still counts as near, so one walking in appears on time"],
+    ["mc_max_view_chunks", 12, "chunks", "mc", "Minecraft's render and simulation distance are held at or under this: 32 froze Minecraft inside its 3 GB of memory (2026-10-12)"]
   ]
 }

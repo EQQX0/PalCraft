@@ -46,6 +46,29 @@ function M.release(t)
     last = k
 end
 
+-- Palworld frees its objects between frames, and a UE4SS handle knows nothing of that: IsValid() on the
+-- handle of a freed object reads the freed memory. That crashed Palworld for players of 0.2.1 about a
+-- minute into a world (2026-10-12). So no handle is kept from one tick to the next. Every tick starts from
+-- the player controller Palworld hands the frame loop and follows Palworld's own properties from there: its
+-- character, its HUD, the lists of PalUtility:GetPalObjectCollector.
+-- NotifyOnNewObject is not used either. Asking for it while Palworld loads a world changes a list its
+-- loading thread is reading, and that crashed the game five seconds into a world (2026-10-13).
+--
+-- Where no property leads to an object, its path is remembered instead and M.find asks for the object of
+-- that path. Measured: up to 0.2 ms for an object that exists, 75 ms for one that is gone (UE4SS then looks
+-- at every object Palworld has). So paths are for the few objects that outlive their use, asked rarely.
+function M.path(obj)
+    return (obj:GetFullName():match("^%S+%s+(.+)$"))
+end
+
+-- The live object of a remembered path, or nil.
+function M.find(path)
+    if not path then return nil end
+    local obj = StaticFindObject(path)
+    if obj and obj:IsValid() then return obj end
+    return nil
+end
+
 -- Lua memory, for the self-check and the log.
 function M.lua_mb() return collectgarbage("count") / 1024 end
 

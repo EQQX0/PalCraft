@@ -157,3 +157,33 @@ Host coords in the protocol: metres, left-handed, x right / y up / z forward. UE
       Gear Workbench, a saddle and a caught mount), raids (need a base; Palworld starts them).
     - The 0.2.1 draft on Melty (release b4dfe987, test fda8e15e passed) does not hold these two changes.
       They need a jar build, package, upload, submit and a new test before publishing.
+- 2026-10-13 0.2.2: crashes, terrain, speed. Co-op stays off ("If the cause of the crashes is the co-op then
+  disable it": it was not the cause, 0.2.1 has no co-op code).
+  - Crash a minute into a world: the Lua mod kept UE4SS handles across frames and Palworld freed the objects.
+    Rewritten: no handle outlives its tick (HANDOFF.md, "The crash"). Played 11 minutes without one.
+  - Crash while a world loads: two causes in UE4SS 3.0.1 (HANDOFF.md, "The load crash"). The frame loop
+    moved from a Blueprint hook to `/Script/Pal.PalHUDInGame:TickWorldHUDs`; the package carries
+    `UE4SS-settings.ini` with `bUseUObjectArrayCache = false`. Every load is in `build/load_loop.log`.
+  - Melty's own numbers for 0.2.1 (install_outcomes): 30 Plays, 9 crashed; heap corruption about 70 s in on
+    every version, which is the load crash.
+  - Terrain patches 2, 3, 4 and performance patches 02, 04, 05 from `docs/handoff/` applied. Seen in the
+    games: "Lifted Steve 2.6 m out of terrain that filled in around him" at each world entry, no fall.
+  - Checked in the games after the hook moved: Minecraft mode, Palworld mode, inventory, pause menu, death,
+    respawn, mod reload. Frame sync 600 of 600.
+  - The owner asked for no test windows on the main monitor and for muted test games. New tools do both
+    and need no clicks: `keep_on_monitor.ps1`, `mute_games.ps1`, `pal_enter.lua`, `respawn.sh`,
+    `pal_key.py`, `pal_inworld.py`, `load_loop.sh`, `stop_loop.ps1`, `mem_watch.ps1`.
+  - My probe crashed Palworld twice: a call that returns an enum (`GetCurrentMode`), and `reload.sh` asking
+    a missing character for its children (now guarded).
+  - Not done: the build-mode check while placing a building; arrows, riding, raids, guns; the other
+    problems Melty lists for 0.2.1 (Prism Launcher crash at 44 s, Minecraft hangs, OpenAL crash).
+  - Melty refused the package that carried `UE4SS-settings.ini` ("already provided by UE4SS"). The file is
+    out of the package again. Players keep the loader's object cache, and with it about one crash in six
+    world loads (16 in 21 before). README and listing say so.
+  - Memory, asked by the owner ("any ram leak?"): Palworld grows 20 to 72 MB a minute while Minecraft is
+    linked and stays flat unlinked. The Lua heap is flat. Cause not found (HANDOFF.md, "Where things stand").
+  - **Melty's test of 0.2.2 passed** on 2026-10-13: 2 runs of 6 minutes, no crash, all 5 self-checks, test `0d39b797-8fb2-4d45-9e04-82068e2176ea`. Both runs entered "PalCraft Test" by clicks (`tools/pal.sh`): the world list sorts by last played, so look at the screenshot before choosing a row.
+  - The owner: "publish and push in github add in melty that its fixed and add updated in title".
+    0.2.2 was published on 2026-10-13 and went into Melty's safety review; `mod_status` names the live version (0.2.1 until the review passes). Title on Melty: "PalCraft | Updated". The page's first lines say what 0.2.2 fixes.
+  - The owner feared a muted release ("i only said mute cuz i was playing game"). The mute was Windows'
+    mixer on my test processes. Nothing in the mod touches sound. `mute_games.ps1 -Unmute` ran afterwards.

@@ -13,6 +13,7 @@ local lastHp
 local hits, total, status, lastDamage, lastKind = 0, 0, 0, 0, 0
 local lastFrom = { 0, 0, 0 }
 local lastHitTick = 0
+local sent -- the report Minecraft has
 
 -- Minecraft damage points -> Pal HP. A sword hit is about a seventh of a small Pal and a sliver of a boss
 -- (the curve Minecraft Ring uses for Elden Ring enemies).
@@ -41,14 +42,16 @@ end
 
 local function apply(env, id, amount, hx, hy, hz)
     local e = entities.find(id)
-    if not e or e.kind == P.ent.OTHER or amount <= 0 or not e.actor:IsValid() then return end
-    local dr = e.actor.DamageReactionComponent
+    if not e or e.kind == P.ent.OTHER or amount <= 0 then return end
+    local actor = entities.actor(env, id)
+    if not actor then return end
+    local dr = actor.DamageReactionComponent
     if not dr or not dr:IsValid() then return end
     -- knocked away from Steve if this kills it
     local dx, dz = e.pos[1] - env.feet[1], e.pos[3] - env.feet[3]
     local n = math.max(0.01, math.sqrt(dx * dx + dz * dz))
     local vx, vy, vz = U.to_ue(dx / n * 4, 3, dz / n * 4)
-    local cp = e.actor.CharacterParameterComponent
+    local cp = actor.CharacterParameterComponent
     local alive = cp and cp:IsValid() and not cp:IsDead()
     dr:SlipDamageAndBlowWhenDead(math.max(1, math.floor(to_hp(amount, e.maxHp) + 0.5)), { X = vx, Y = vy, Z = vz })
     if alive and cp:IsDead() then U.guard("kill_exp", reward, env, e, cp) end
@@ -102,8 +105,13 @@ local function watch_player(env)
         hp = maxHp
     end
     lastHp = hp
-    shm.publish(HE, string.pack("<I4ffffffI8I4f", hits, total, lastDamage, lastFrom[1], lastFrom[2], lastFrom[3], maxHp,
-        lastHitTick, lastKind, status))
+    -- Minecraft reads this twenty times a second and it changes with a hit: written when it does.
+    local report = string.pack("<I4ffffffI8I4f", hits, total, lastDamage, lastFrom[1], lastFrom[2], lastFrom[3], maxHp,
+        lastHitTick, lastKind, status)
+    if report ~= sent then
+        sent = report
+        shm.publish(HE, report)
+    end
 end
 
 function M.tick(env)

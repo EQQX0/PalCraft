@@ -152,6 +152,11 @@ public final class ErLink {
 		return shm != null && alive() && shm.readEntities(out);
 	}
 
+	/** Co-op: the other players of the Palworld session. False while Palworld is away or has listed nobody yet. */
+	public synchronized boolean readPlayers(java.util.List<PlayerInfo> out, boolean text) {
+		return shm != null && alive() && shm.readPlayers(out, text);
+	}
+
 	/** Open doorways (see {@link BridgeShm#readPassages}); -1 when unavailable. */
 	public synchronized int readPassages(float[] out, int[] zoneOut) {
 		return shm != null && alive() ? shm.readPassages(out, zoneOut) : -1;

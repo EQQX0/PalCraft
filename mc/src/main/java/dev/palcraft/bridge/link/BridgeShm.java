@@ -20,6 +20,9 @@ public final class BridgeShm {
 	private static final VarHandle INT = MethodHandles.byteBufferViewVarHandle(int[].class, ByteOrder.LITTLE_ENDIAN);
 	private static final VarHandle LONG = MethodHandles.byteBufferViewVarHandle(long[].class, ByteOrder.LITTLE_ENDIAN);
 
+	/** Size of the control block, as bridge.lua reads it. */
+	private static final int CONTROL_BYTES = 0x64;
+
 	private final MappedByteBuffer buf;
 
 	private BridgeShm(MappedByteBuffer buf) {
@@ -49,6 +52,11 @@ public final class BridgeShm {
 			buf.putInt(Protocol.H_VERSION, Protocol.VERSION);
 			buf.putInt(Protocol.H_SIZE, Protocol.SHM_SIZE);
 			INT.setRelease(buf, Protocol.H_MAGIC, Protocol.MAGIC);
+		}
+		// A Minecraft that was killed leaves its last orders in the file: Palworld would carry and hide its
+		// character for a Minecraft that has not drawn a frame yet. A new Minecraft starts with none.
+		for (int i = 0; i < CONTROL_BYTES; i += 4) {
+			buf.putInt(Protocol.OFF_CONTROL + i, 0);
 		}
 		buf.putInt(Protocol.H_MC_PID, (int) ProcessHandle.current().pid());
 		buf.putLong(Protocol.H_MC_START, System.currentTimeMillis());
@@ -403,6 +411,49 @@ public final class BridgeShm {
 			}
 			VarHandle.acquireFence();
 			if ((int) INT.getAcquire(buf, base + Protocol.E_SEQ) == s1) {
+				return s1 != 0;
+			}
+		}
+		return false;
+	}
+
+	/**
+	 * Seqlock read of the other players of the Palworld session into {@code out} (resized as needed).
+	 * text = also their names and tools; a read for every frame leaves those as they were.
+	 */
+	public boolean readPlayers(java.util.List<PlayerInfo> out, boolean text) {
+		int base = Protocol.OFF_PLAYERS;
+		for (int tries = 0; tries < 2000; tries++) {
+			int s1 = (int) INT.getAcquire(buf, base + Protocol.PL_SEQ);
+			if ((s1 & 1) != 0) {
+				Thread.onSpinWait();
+				continue;
+			}
+			int count = Math.max(0, Math.min(buf.getInt(base + Protocol.PL_COUNT), Protocol.MAX_PLAYERS));
+			while (out.size() < count) {
+				out.add(new PlayerInfo());
+			}
+			while (out.size() > count) {
+				out.remove(out.size() - 1);
+			}
+			for (int i = 0; i < count; i++) {
+				PlayerInfo p = out.get(i);
+				int o = base + Protocol.PL_ROWS + i * Protocol.PLAYER_SIZE;
+				p.id = buf.getLong(o + Protocol.PR_ID);
+				p.flags = buf.getInt(o + Protocol.PR_FLAGS);
+				p.health = buf.getFloat(o + Protocol.PR_HEALTH);
+				for (int k = 0; k < 3; k++) {
+					p.pos[k] = buf.getFloat(o + Protocol.PR_POS + k * 4);
+				}
+				p.yawDeg = buf.getFloat(o + Protocol.PR_YAW);
+				p.pitchDeg = buf.getFloat(o + Protocol.PR_PITCH);
+				if (text) {
+					p.name = text(o + Protocol.PR_NAME, Protocol.PR_NAME_LEN);
+					p.tool = text(o + Protocol.PR_TOOL, Protocol.PR_TOOL_LEN);
+				}
+			}
+			VarHandle.acquireFence();
+			if ((int) INT.getAcquire(buf, base + Protocol.PL_SEQ) == s1) {
 				return s1 != 0;
 			}
 		}

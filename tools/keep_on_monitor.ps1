@@ -1,6 +1,8 @@
 # Dev aid: keeps the windows of both games (and Prism) on one monitor while a test session runs.
 #   powershell -File tools/keep_on_monitor.ps1 -Device '\\.\DISPLAY2' -Minutes 60
-param([string]$Device = '\\.\DISPLAY2', [int]$Minutes = 60)
+# -Names limits it to those programs: the owner may have a Minecraft of their own open (javaw), which stays put.
+param([string]$Device = '\\.\DISPLAY2', [int]$Minutes = 60,
+    [string[]]$Names = @('java', 'javaw', 'prismlauncher', 'Palworld-Win64-Shipping', 'Palworld'))
 Add-Type -AssemblyName System.Windows.Forms
 Add-Type @'
 using System;
@@ -18,7 +20,7 @@ public static class PcWin {
 $target = [System.Windows.Forms.Screen]::AllScreens | Where-Object { $_.DeviceName -eq $Device }
 if (-not $target) { Write-Output "no monitor $Device"; exit 1 }
 $b = $target.Bounds
-$names = 'java', 'javaw', 'prismlauncher', 'Palworld-Win64-Shipping', 'Palworld'
+$names = @($Names | ForEach-Object { $_ -split ',' } | Where-Object { $_ }) # -File hands a,b,c over as one word
 $until = (Get-Date).AddMinutes($Minutes)
 while ((Get-Date) -lt $until) {
     $pids = @{}

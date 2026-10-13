@@ -1,0 +1,20 @@
+diff --git a/host/lua/PalCraft/Scripts/combat.lua b/host/lua/PalCraft/Scripts/combat.lua
+index 769f379..51edb1d 100644
+--- a/host/lua/PalCraft/Scripts/combat.lua
++++ b/host/lua/PalCraft/Scripts/combat.lua
+@@ -15,2 +15,3 @@ local lastFrom = { 0, 0, 0 }
+ local lastHitTick = 0
++local sent -- the report Minecraft has
+ 
+@@ -104,4 +105,9 @@ local function watch_player(env)
+     lastHp = hp
+-    shm.publish(HE, string.pack("<I4ffffffI8I4f", hits, total, lastDamage, lastFrom[1], lastFrom[2], lastFrom[3], maxHp,
+-        lastHitTick, lastKind, status))
++    -- Minecraft reads this twenty times a second and it changes with a hit: written when it does.
++    local report = string.pack("<I4ffffffI8I4f", hits, total, lastDamage, lastFrom[1], lastFrom[2], lastFrom[3], maxHp,
++        lastHitTick, lastKind, status)
++    if report ~= sent then
++        sent = report
++        shm.publish(HE, report)
++    end
+ end

@@ -1,0 +1,25 @@
+diff --git a/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java b/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
+index 768808a..5f1cbff 100644
+--- a/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
++++ b/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
+@@ -10,2 +10,3 @@ import dev.palcraft.bridge.link.Protocol;
+ import net.minecraft.client.Minecraft;
++import net.minecraft.world.entity.LivingEntity;
+ import org.lwjgl.opengl.GL11;
+@@ -340,3 +341,3 @@ public final class FramePassthrough {
+ 	public static void afterHand(Minecraft mc) {
+-		if (!worldCaptured) {
++		if (!worldCaptured || !handDrawn(mc)) {
+ 			return;
+@@ -351,2 +352,11 @@ public final class FramePassthrough {
+ 
++	/**
++	 * Behind Steve (F5) and for a sleeper Minecraft draws no hand and no screen effect, and the layer would
++	 * be a full copy of nothing. The same test as GameRenderer.renderItemInHand.
++	 */
++	private static boolean handDrawn(Minecraft mc) {
++		return mc.options.getCameraType().isFirstPerson()
++			&& !(mc.getCameraEntity() instanceof LivingEntity sleeper && sleeper.isSleeping());
++	}
++
+ 	/** End of frame, before the main target is shown: read back the overlay layer, publish last frame. */

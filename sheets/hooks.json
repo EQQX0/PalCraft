@@ -2,7 +2,7 @@
   "_doc": "Every place PalCraft attaches to a game. One row = one hook. sys refers to systems.json. slot = vtable slot ('-' for non-vtable hooks).",
   "columns": ["id", "side", "kind", "target", "slot", "sys", "does"],
   "rows": [
-    ["tick",         "lua",    "UFunction hook", "/Game/Pal/Blueprint/Controller/BP_PalPlayerController.BP_PalPlayerController_C:ReceiveTick", "-", "frame_loop", "runs the bridge once per game frame on the game thread"],
+    ["tick",         "lua",    "UFunction hook", "/Script/Pal.PalHUDInGame:TickWorldHUDs", "-", "frame_loop", "runs the bridge once per game frame on the game thread: Palworld's in-world HUD calls this function of its own once per frame (684 calls in 684 frames). A built-in function, because a hook on a Blueprint function makes the loader look at every Blueprint call on every thread"],
     ["present",      "native", "vtable hook",    "IDXGISwapChain::Present",                    8,  "compositor",  "draws the Minecraft layers into the finished frame, publishes state"],
     ["present1",     "native", "vtable hook",    "IDXGISwapChain1::Present1",                  22, "compositor",  "same, for the other present call"],
     ["resize",       "native", "vtable hook",    "IDXGISwapChain::ResizeBuffers",              13, "compositor",  "drops back buffer views before a resize"],
@@ -14,7 +14,7 @@
     ["draw_inst",    "native", "vtable hook",    "ID3D11DeviceContext::DrawInstanced",         21, "ui_order",    "same, for instanced draws"],
     ["viewports",    "native", "vtable hook",    "ID3D11DeviceContext::RSSetViewports",        44, "frame_tag",   "sees the frame tag and the view rectangle of the scene"],
     ["set_cursor", "native", "inline hook", "user32!SetCursor", "-", "cursor", "turns Palworld's pointer changes into 'no pointer' while Minecraft holds the mouse"],
-    ["build_screen", "lua", "new object", "/Game/Pal/Blueprint/UI/UserInterface/InGame/Construction/WBP_IngameConstruction.WBP_IngameConstruction_C", "-", "hud_swap", "hears of each build-mode screen Palworld makes; it makes the first when the player first builds"],
-    ["menu_preview", "lua", "new object", "/Game/Pal/Blueprint/UI/SceneCaptureWidget/WBP_PalPlayerInframeRender.WBP_PalPlayerInframeRender_C", "-", "menu_steve", "hears of each character preview Palworld makes for its inventory screen"]
+    ["menu_preview", "lua", "object search", "/Game/Pal/Blueprint/UI/SceneCaptureWidget/WBP_PalPlayerInframeRender.WBP_PalPlayerInframeRender_C", "-", "menu_steve", "looks for the character preview of Palworld's inventory screen while a menu is open and none is known"],
+    ["player_chars", "lua", "new object", "/Script/Pal.PalPlayerCharacter", "-", "coop_players", "hears of each player character Palworld makes. Not in use while coop_enabled is 0, and to be replaced first: asking Palworld for new objects while it loads a world crashed it (2026-10-13)"]
   ]
 }

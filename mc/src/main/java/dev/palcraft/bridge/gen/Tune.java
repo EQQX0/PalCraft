@@ -31,4 +31,14 @@ public final class Tune {
 	public static final double PREVIEW_TOP = 0.27;
 	/** to this far down (screen heights) */
 	public static final double PREVIEW_BOTTOM = 0.8;
+	/** co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long (ms) */
+	public static final double PLAYER_GONE_MS = 1500.0;
+	/** how far below Steve's feet a column's ground ray reaches; a miss then means no world below, not a drop (m) */
+	public static final double RAY_BELOW_M = 300.0;
+	/** Steve is put back where he last stood once he has fallen this far with no Palworld ground known under him (m) */
+	public static final double FALL_RESCUE_M = 12.0;
+	/** Steve walks up steps this high: Palworld's 45 degree slopes come out as one block per column (m) */
+	public static final double STEP_HEIGHT_M = 1.1;
+	/** Minecraft's render and simulation distance are held at or under this: 32 froze Minecraft inside its 3 GB of memory (2026-10-12) (chunks) */
+	public static final double MC_MAX_VIEW_CHUNKS = 12.0;
 }

@@ -8,6 +8,7 @@ import dev.palcraft.bridge.gen.Tune;
 import dev.palcraft.bridge.link.ErLink;
 import dev.palcraft.bridge.link.Protocol;
 import net.minecraft.client.Minecraft;
+import net.minecraft.world.entity.LivingEntity;
 import org.lwjgl.opengl.GL11;
 import org.lwjgl.opengl.GL12;
 import org.lwjgl.opengl.GL15;
@@ -104,6 +105,7 @@ public final class FramePassthrough {
 	 * under the wanted frame rate for two seconds, go one size down. Once per client tick.
 	 */
 	public static void watchFrameRate(Minecraft mc) {
+		watchVsync(mc);
 		long now = System.currentTimeMillis();
 		if (!autoScale || !wanted() || mc.level == null || mc.screen != null || now < settleUntil) {
 			slowSince = 0;
@@ -162,6 +164,8 @@ public final class FramePassthrough {
 	private static final float[][] CLIP = new float[CAPTURES][2];
 	private static long statsAt;
 	private static int rendered, captures, published, waitingCapture, waitingHost;
+	private static long copyNanos, copiedLayers;
+	private static boolean freeRunning;
 	private static boolean worldCaptured;
 	private static long frameCounter = System.currentTimeMillis() * 1024L;
 	/**
@@ -337,7 +341,7 @@ public final class FramePassthrough {
 
 	/** GameRenderer.renderLevel, right after the hand: read back the hand layer. */
 	public static void afterHand(Minecraft mc) {
-		if (!worldCaptured) {
+		if (!worldCaptured || !handDrawn(mc)) {
 			return;
 		}
 		RenderTarget main = mc.getMainRenderTarget();
@@ -348,6 +352,27 @@ public final class FramePassthrough {
 		HAND[cur] = true;
 	}
 
+	/**
+	 * Behind Steve (F5) and for a sleeper Minecraft draws no hand and no screen effect, and the layer would
+	 * be a full copy of nothing. The same test as GameRenderer.renderItemInHand.
+	 */
+	private static boolean handDrawn(Minecraft mc) {
+		return mc.options.getCameraType().isFirstPerson()
+			&& !(mc.getCameraEntity() instanceof LivingEntity sleeper && sleeper.isSleeping());
+	}
+
+	/**
+	 * Minecraft's own window shows nothing while Palworld draws these frames, so waiting for the monitor
+	 * before each swap only delays the next frame. frameLimit() sets the pace instead. Once per client tick.
+	 */
+	private static void watchVsync(Minecraft mc) {
+		boolean free = activeInHost() && wanted();
+		if (free != freeRunning) {
+			freeRunning = free;
+			mc.getWindow().updateVsync(!free && mc.options.enableVsync().get());
+		}
+	}
+
 	/** End of frame, before the main target is shown: read back the overlay layer, publish last frame. */
 	public static void endFrame(Minecraft mc) {
 		rendered++;
@@ -355,9 +380,11 @@ public final class FramePassthrough {
 		if(statsAt==0) statsAt=now;
 		if(now-statsAt>=5_000_000_000L) {
 			double seconds=(now-statsAt)/1_000_000_000.0;
-			LOG.info("Capture pipeline: rendered {} fps, captured {} fps, published {} fps, pending skips {}, host-buffer skips {}",
-				Math.round(rendered/seconds),Math.round(captures/seconds),Math.round(published/seconds),waitingCapture,waitingHost);
-			statsAt=now; rendered=captures=published=waitingCapture=waitingHost=0;
+			LOG.info("Capture pipeline: rendered {} fps, captured {} fps, published {} fps, pending skips {}, host-buffer skips {}, "
+					+ "copy {} ms a frame for {} layers",
+				Math.round(rendered/seconds),Math.round(captures/seconds),Math.round(published/seconds),waitingCapture,waitingHost,
+				String.format("%.2f",copyNanos/1.0e6/Math.max(1,published)),String.format("%.1f",copiedLayers/(double)Math.max(1,published)));
+			statsAt=now; rendered=captures=published=waitingCapture=waitingHost=0; copyNanos=copiedLayers=0;
 		}
 		boolean captured = worldCaptured;
 		if (worldCaptured) {
@@ -415,7 +442,9 @@ public final class FramePassthrough {
 		VarHandle.releaseFence();
 		long layer = (long) w * h * 4;
 		boolean hand = HAND[set];
+		long copyFrom = System.nanoTime();
 		for (int i = 0; !GPU_FRAME[set] && i < (hand ? 4 : 3); i++) {
+			copiedLayers++;
 			GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, PBO[set][i]);
 			ByteBuffer src = GL30.glMapBufferRange(GL21.GL_PIXEL_PACK_BUFFER, 0, layer, GL30.GL_MAP_READ_BIT);
 			if (src != null) {
@@ -426,6 +455,7 @@ public final class FramePassthrough {
 			}
 		}
 		GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
+		copyNanos += System.nanoTime() - copyFrom;
 		frames.putInt(base + 0x04, w);
 		frames.putInt(base + 0x08, h);
 		frames.putInt(base + 0x0C, (hand ? 7 : 3) | (GPU_FRAME[set] ? 8 : 0));

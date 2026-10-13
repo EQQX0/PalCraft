@@ -3,6 +3,8 @@
   "columns": ["id", "match", "kind", "hurtable", "box", "note"],
   "rows": [
     ["player",    "is the pawn of the local player",                  "-",     false, "-",                     "never listed: it is the stand-in for Steve"],
+    ["other_player", "a player character that is not this PC's own", "-", false, "-", "never listed: system coop_players draws it as a Minecraft player"],
+    ["stored_pal", "a character Palworld has switched off: its collision is disabled", "-", false, "-", "never listed: a party Pal that is not out waits high above its owner"],
     ["own_pal",   "PalCharacter that belongs to the local player",    "OTHER", false, "capsule radius/height", "your team and base workers"],
     ["npc_human", "class name starts with BP_NPC_",                   "SMALL", true,  "capsule radius/height", "syndicate, merchants: Palworld decides what attacking them means"],
     ["boss_pal",  "max HP at or above 4000",                          "LARGE", true,  "capsule radius/height", "alphas and tower bosses"],

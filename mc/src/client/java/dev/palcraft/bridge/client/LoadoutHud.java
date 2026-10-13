@@ -74,6 +74,11 @@ public final class LoadoutHud {
 		return HostBody.active() && held >= 0 ? STACKS[held] : ItemStack.EMPTY;
 	}
 
+	/** Co-op: the item a friend's Minecraft player holds for the Palworld tool in their hand. */
+	static ItemStack stackFor(String palworld) {
+		return palworld.isEmpty() ? ItemStack.EMPTY : new ItemStack(item(palworld));
+	}
+
 	/** The Minecraft item that stands for a Palworld tool or sphere (sheets/tools.json). */
 	private static Item item(String palworld) {
 		String name = palworld.toLowerCase(Locale.ROOT);

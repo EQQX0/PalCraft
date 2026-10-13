@@ -42,6 +42,13 @@
     ["damage", "NOT_BY_PLAYER", "0x4", "mc", "-",                "a Minecraft mob or effect did it"],
     ["damage", "WORLD_RAY",     "0x8", "mc", "DAMAGE_WORLD_RAY", "id 0: hitPos is an aim endpoint"],
 
+    ["player", "CROUCH", "0x1", "lua", "PLAYER_CROUCH", "crouches or slides"],
+    ["player", "SWIM", "0x2", "lua", "PLAYER_SWIM", "swims"],
+    ["player", "DEAD", "0x4", "lua", "PLAYER_DEAD", "defeated"],
+    ["player", "ACT", "0x8", "lua", "PLAYER_ACT", "plays an action: a swing, a throw, a shot"],
+    ["const", "MAX_PLAYERS", "32", "mc", "MAX_PLAYERS", "player rows"],
+    ["const", "PLAYER_SIZE", "0x80", "mc", "PLAYER_SIZE", "bytes per player row"],
+    ["const", "PLAYERS_OFF_ROWS", "0x10", "mc", "PL_ROWS", "first row, from the players region"],
     ["const", "MAGIC",                "0x434D484D", "mc",  "MAGIC",        "bridge.shm magic"],
     ["const", "VERSION",              "1",          "mc",  "VERSION",      "bridge.shm version"],
     ["const", "SHM_SIZE",             "0x800000",   "mc",  "SHM_SIZE",     "bridge.shm bytes"],

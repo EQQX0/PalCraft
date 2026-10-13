@@ -1,0 +1,535 @@
+diff --git a/host/lua/PalCraft/Scripts/combat.lua b/host/lua/PalCraft/Scripts/combat.lua
+index 769f379..51edb1d 100644
+--- a/host/lua/PalCraft/Scripts/combat.lua
++++ b/host/lua/PalCraft/Scripts/combat.lua
+@@ -13,6 +13,7 @@ local lastHp
+ local hits, total, status, lastDamage, lastKind = 0, 0, 0, 0, 0
+ local lastFrom = { 0, 0, 0 }
+ local lastHitTick = 0
++local sent -- the report Minecraft has
+ 
+ -- Minecraft damage points -> Pal HP. A sword hit is about a seventh of a small Pal and a sliver of a boss
+ -- (the curve Minecraft Ring uses for Elden Ring enemies).
+@@ -102,8 +103,13 @@ local function watch_player(env)
+         hp = maxHp
+     end
+     lastHp = hp
+-    shm.publish(HE, string.pack("<I4ffffffI8I4f", hits, total, lastDamage, lastFrom[1], lastFrom[2], lastFrom[3], maxHp,
+-        lastHitTick, lastKind, status))
++    -- Minecraft reads this twenty times a second and it changes with a hit: written when it does.
++    local report = string.pack("<I4ffffffI8I4f", hits, total, lastDamage, lastFrom[1], lastFrom[2], lastFrom[3], maxHp,
++        lastHitTick, lastKind, status)
++    if report ~= sent then
++        sent = report
++        shm.publish(HE, report)
++    end
+ end
+ 
+ function M.tick(env)
+diff --git a/host/lua/PalCraft/Scripts/entities.lua b/host/lua/PalCraft/Scripts/entities.lua
+index a2ff314..e065ba2 100644
+--- a/host/lua/PalCraft/Scripts/entities.lua
++++ b/host/lua/PalCraft/Scripts/entities.lua
+@@ -9,9 +9,11 @@ local M = {}
+ local OFF = P.off.entities
+ local MAXN = P.const.MAX_ENTITIES
+ local util
+-local byId = {}      -- id -> { actor, kind, maxHp }
++local byId = {}      -- id -> { actor, kind, maxHp }, and what a Pal never changes: name, box, its health component
+ local frame = 0
+ local known = {}     -- every PalCharacter alive, by address
++local near = {}      -- those of them within reach of Steve at the last look over all of them
++local lookIn = 0     -- tables until the next such look
+ local watching = false
+ 
+ -- Searching all of Palworld's objects for characters takes tens of milliseconds: do it once, then let
+@@ -52,37 +54,61 @@ local function classify(a, cp, name, maxHp)
+     return P.ent.SMALL                                                         -- wild_pal
+ end
+ 
+-local function describe(a, pawnAddr, feet, r2)
++-- id = the address known and near keep a under.
++local function describe(a, id, pawnAddr, feet, r2)
+     if not a:IsValid() then return nil end
+-    local id = a:GetAddress()
+     if id == pawnAddr then return nil end                                      -- player
+     if players.is_player(id) then return nil end                               -- other_player
+     local l = a:K2_GetActorLocation()
+     local x, y, z = U.to_host(l.X, l.Y, l.Z)
+     local dx, dy, dz = x - feet[1], y - feet[2], z - feet[3]
+     if dx * dx + dy * dy + dz * dz > r2 then return nil end
+-    local cp = a.CharacterParameterComponent
++    -- Its name, its box and its kind stay as they are while it is listed: asked once, they save ten calls
++    -- into Unreal per Pal and table. A new character at an old address is another actor and starts over.
++    local e = byId[id]
++    if e and not rawequal(e.actor, a) then e = nil end
++    local cp = e and e.cp or a.CharacterParameterComponent
+     if not cp or not cp:IsValid() then return nil end
+-    local hp, maxHp = cp:GetHP().Value / 1000, cp:GetMaxHP().Value / 1000
+-    local radius, half = 0.4, 0.9
+-    local cap = a.CapsuleComponent
+-    if cap and cap:IsValid() then radius, half = cap:GetScaledCapsuleRadius() / 100, cap:GetScaledCapsuleHalfHeight() / 100 end
+-    -- A Lamball's capsule is a 60 cm ball that the grass and the terrain blocks around it swallow. Give small Pals
+-    -- a box Steve can find with a sword, grown upward from where they stand.
+-    local feetY = y - half
+-    radius, half = math.max(radius, P.tune.pal_box_min_radius_m), math.max(half, P.tune.pal_box_min_half_m)
+-    local name = a:GetClass():GetFName():ToString():gsub("^BP_", ""):gsub("_C$", "")
+-    local seen = byId[id]
+-    local kind = seen and seen.kind or classify(a, cp, name, maxHp)
++    local hp = cp:GetHP().Value / 1000
++    if not e then
++        local maxHp = cp:GetMaxHP().Value / 1000
++        local radius, half = 0.4, 0.9
++        local cap = a.CapsuleComponent
++        if cap and cap:IsValid() then radius, half = cap:GetScaledCapsuleRadius() / 100, cap:GetScaledCapsuleHalfHeight() / 100 end
++        local name = a:GetClass():GetFName():ToString():gsub("^BP_", ""):gsub("_C$", "")
++        e = { actor = a, cp = cp, kind = classify(a, cp, name, maxHp), maxHp = maxHp, name = name:sub(1, 47),
++            -- A Lamball's capsule is a 60 cm ball that the grass and the terrain blocks around it swallow. Give small
++            -- Pals a box Steve can find with a sword, grown upward from where they stand.
++            drop = half, radius = math.max(radius, P.tune.pal_box_min_radius_m), half = math.max(half, P.tune.pal_box_min_half_m) }
++    end
++    local feetY = y - e.drop
+     local dead = cp:IsDead() or hp <= 0
+     local yaw = math.rad(a:K2_GetActorRotation().Yaw)
+     local flags = P.entity.WORLD_BOX | (dead and P.entity.DEAD or 0)
+-    local e = seen or { actor = a, kind = kind }
+-    e.maxHp, e.pos, e.seen = maxHp, { x, y, z }, frame
++    e.pos, e.seen = { x, y, z }, frame
+     byId[id] = e
+-    return string.pack("<I8I4I4fffffffffffffffI4c48", id, kind, 0,
++    return string.pack("<I8I4I4fffffffffffffffI4c48", id, e.kind, 0,
+         x, feetY, z, 0, math.sin(yaw / 2), 0, math.cos(yaw / 2),
+-        x, feetY + half, z, radius, half, radius, hp, maxHp, flags, name:sub(1, 47))
++        x, feetY + e.half, z, e.radius, e.half, e.radius, hp, e.maxHp, flags, e.name)
++end
++
++-- Most of Palworld's characters are out of reach, and finding that out is a call into Unreal each. All of them
++-- are looked over every entity_far_tables tables; in between only those found within reach then are asked, so
++-- a Pal that walks into reach shows up that much later, at the far edge.
++local function look_over(pawnAddr, feet, r2)
++    near = {}
++    for addr, a in pairs(known) do
++        if not a:IsValid() then
++            known[addr] = nil
++        elseif addr ~= pawnAddr then
++            local ok, l = pcall(a.K2_GetActorLocation, a)
++            if ok then
++                local x, y, z = U.to_host(l.X, l.Y, l.Z)
++                local dx, dy, dz = x - feet[1], y - feet[2], z - feet[3]
++                if dx * dx + dy * dy + dz * dz <= r2 then near[addr] = a end
++            end
++        end
++    end
+ end
+ 
+ function M.tick(env)
+@@ -94,14 +120,18 @@ function M.tick(env)
+         local pawnAddr = env.pawn:GetAddress()
+         local r2 = P.tune.entity_radius_m ^ 2
+         watch()
+-        for addr, a in pairs(known) do
+-            if not a:IsValid() then
+-                known[addr] = nil
+-            elseif #rows < MAXN then
+-                local ok, row = pcall(describe, a, pawnAddr, env.feet, r2)
+-                if ok and row then rows[#rows + 1] = row end
+-            end
++        lookIn = lookIn - 1
++        if lookIn <= 0 then
++            lookIn = P.tune.entity_far_tables
++            look_over(pawnAddr, env.feet, r2)
++        end
++        for addr, a in pairs(near) do
++            if #rows >= MAXN then break end
++            local ok, row = pcall(describe, a, addr, pawnAddr, env.feet, r2)
++            if ok and row then rows[#rows + 1] = row end
+         end
++    else
++        lookIn = 0
+     end
+     for id, e in pairs(byId) do
+         if e.seen ~= frame then byId[id] = nil end
+diff --git a/host/lua/PalCraft/Scripts/rays.lua b/host/lua/PalCraft/Scripts/rays.lua
+index 33d10b2..47ada41 100644
+--- a/host/lua/PalCraft/Scripts/rays.lua
++++ b/host/lua/PalCraft/Scripts/rays.lua
+@@ -11,23 +11,35 @@ local RAY, HIT = P.const.RAY_SIZE, P.const.HIT_SIZE
+ local MISS = string.pack("<ffffffI4I4", 0, 0, 0, 0, 0, 0, 0, 0)
+ local black = { R = 0, G = 0, B = 0, A = 0 }
+ local none = {}
++local from, to = { X = 0, Y = 0, Z = 0 }, { X = 0, Y = 0, Z = 0 } -- every trace's ends: read by the call, kept by nobody
+ local KSL
+ local job -- the batch in progress
++local owners = {} -- component address -> its owner is a Pal or a person; forgotten with each batch
+ 
+--- Pals and people are not terrain: a ray that hits one carries on behind it.
++-- Pals and people are not terrain: a ray that hits one carries on behind it. A batch lands on the same few
++-- pieces of ground thousands of times, and asking a piece for its owner is four calls into Unreal.
++local function owned_by_character(hit)
++    local c = hit.Component:Get()
++    if not c or not c:IsValid() then return false end
++    local at = c:GetAddress()
++    local yes = owners[at]
++    if yes == nil then
++        local owner = c:GetOwner()
++        yes = owner and owner:IsValid() and owner.CharacterParameterComponent ~= nil and owner.CharacterParameterComponent:IsValid() or false
++        owners[at] = yes
++    end
++    return yes
++end
+ local function is_character(hit)
+-    local ok, yes = pcall(function()
+-        local c = hit.Component:Get()
+-        local owner = c and c:IsValid() and c:GetOwner()
+-        return owner and owner:IsValid() and owner.CharacterParameterComponent ~= nil and owner.CharacterParameterComponent:IsValid()
+-    end)
++    local ok, yes = pcall(owned_by_character, hit)
+     return ok and yes
+ end
+ 
+ local function line(pawn, sx, sy, sz, ex, ey, ez)
+     local hit = {}
+-    local blocked = KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
+-        0, false, none, 0, hit, true, black, black, 0.0)
++    from.X, from.Y, from.Z = sz * 100, sx * 100, sy * 100
++    to.X, to.Y, to.Z = ez * 100, ex * 100, ey * 100
++    local blocked = KSL:LineTraceSingle(pawn, from, to, 0, false, none, 0, hit, true, black, black, 0.0)
+     U.release(hit)
+     if blocked then return hit end
+ end
+@@ -49,11 +61,8 @@ local function trace(pawn, sx, sy, sz, ex, ey, ez)
+         return string.pack("<ffffffI4I4", sx, sy, sz, 0, 1, 0, 1, 0)   -- solid right here
+     end
+     for _ = 1, 3 do
+-        local hit = {}
+-        local blocked = KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
+-            0, false, none, 0, hit, true, black, black, 0.0)
+-        U.release(hit)
+-        if not blocked then return MISS end
++        local hit = line(pawn, sx, sy, sz, ex, ey, ez)
++        if not hit then return MISS end
+         local p, n = hit.ImpactPoint, hit.ImpactNormal
+         if not is_character(hit) then
+             return string.pack("<ffffffI4I4", p.Y / 100, p.Z / 100, p.X / 100, n.Y, n.Z, n.X, 1, 0)
+@@ -80,6 +89,7 @@ function M.tick(env)
+     if not job or job.seq ~= req then
+         count = math.min(count, P.const.MAX_RAYS)
+         job = { seq = req, count = count, data = count > 0 and shm.read(OFF + P.const.RAYS_OFF_RAYS, count * RAY) or "", i = 0, out = {} }
++        owners = {}
+     end
+     local t0, budget, least = os.clock(), P.tune.ray_budget_ms / 1000, P.tune.ray_min_per_tick
+     local pawn, data, out, done = env.pawn, job.data, job.out, 0
+diff --git a/host/native/src/palcraft.cpp b/host/native/src/palcraft.cpp
+index 3be950d..f896a99 100644
+--- a/host/native/src/palcraft.cpp
++++ b/host/native/src/palcraft.cpp
+@@ -11,6 +11,7 @@
+ #include <stdarg.h>
+ #include <stdint.h>
+ #include <stdio.h>
++#include <stdlib.h>
+ #include <string.h>
+ 
+ #include "MinHook.h"
+@@ -568,7 +569,8 @@ static const int kLayers = 4;  // world BGRA8, depth R32F, HUD BGRA8, hand BGRA8
+ static ID3D11Texture2D* g_tex[2][kLayers] = {};
+ static ID3D11ShaderResourceView* g_texSrv[2][kLayers] = {};
+ static UINT g_texW = 0, g_texH = 0;
+-static int g_front = 0;
++// The set on screen, layer by layer: Minecraft leaves the HUD out of most frames, and the last one sent stays up.
++static int g_front[kLayers] = {};
+ static bool g_haveFrame = false, g_frontHand = false;
+ static uint64_t g_lastUploaded = 0;
+ static float g_frameNear = 0.05f, g_frameFar = 1000.0f;
+@@ -703,15 +705,20 @@ static bool ensure_layers(UINT w, UINT h) {
+     d.Usage = D3D11_USAGE_DYNAMIC;
+     d.BindFlags = D3D11_BIND_SHADER_RESOURCE;
+     d.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
++    // Empty to start with: a first frame that comes without a HUD shows none, not what the graphics card had there.
++    void* empty = calloc((size_t)w * h, 4);
++    D3D11_SUBRESOURCE_DATA init = {empty, w * 4, 0};
+     for (int s = 0; s < 2; s++)
+         for (int i = 0; i < kLayers; i++) {
+             d.Format = i == 1 ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_B8G8R8A8_UNORM;
+-            if (FAILED(g_devc->CreateTexture2D(&d, nullptr, &g_tex[s][i])) ||
++            if (FAILED(g_devc->CreateTexture2D(&d, empty ? &init : nullptr, &g_tex[s][i])) ||
+                 FAILED(g_devc->CreateShaderResourceView(g_tex[s][i], nullptr, &g_texSrv[s][i]))) {
++                free(empty);
+                 release_layers();
+                 return false;
+             }
+         }
++    free(empty);
+     g_texW = w;
+     g_texH = h;
+     log("compositor: Minecraft layers %ux%u", w, h);
+@@ -733,7 +740,8 @@ static uint8_t* pick_slot(uint64_t poseId) {
+     return best;
+ }
+ 
+-// Copies a slot into the back texture set and flips to it. False if Minecraft rewrote the slot meanwhile.
++// Copies the layers a slot holds into their back textures and flips to those. False if Minecraft rewrote the
++// slot meanwhile.
+ static bool upload_slot(uint8_t* h) {
+     uint32_t seq = at<volatile uint32_t>(h, PC_FRAME_HEADER_SEQ);
+     if (seq & 1) return false;
+@@ -741,23 +749,26 @@ static bool upload_slot(uint8_t* h) {
+     if (w != g_texW || ht != g_texH) return false;
+     uint32_t flags = at<uint32_t>(h, PC_FRAME_HEADER_FLAGS);
+     bool hand = (flags & PC_FRAME_HAND) != 0;
++    bool sent[kLayers] = {true, true, (flags & PC_FRAME_HUD) != 0, hand};
+     uint64_t layerBytes = (uint64_t)w * ht * 4;
+     const uint8_t* base = h + PC_CONST_FRAME_HDR;
+-    int back = 1 - g_front;
+-    for (int i = 0; i < (hand ? 4 : 3); i++) {
++    for (int i = 0; i < kLayers; i++) {
++        if (!sent[i]) continue;
++        ID3D11Texture2D* back = g_tex[1 - g_front[i]][i];
+         D3D11_MAPPED_SUBRESOURCE m;
+-        if (FAILED(g_ctx->Map(g_tex[back][i], 0, D3D11_MAP_WRITE_DISCARD, 0, &m))) return false;
++        if (FAILED(g_ctx->Map(back, 0, D3D11_MAP_WRITE_DISCARD, 0, &m))) return false;
+         const uint8_t* src = base + layerBytes * i;
+         if (m.RowPitch == w * 4) {
+             memcpy(m.pData, src, (size_t)layerBytes);
+         } else {
+             for (UINT y = 0; y < ht; y++) memcpy((uint8_t*)m.pData + (size_t)y * m.RowPitch, src + (size_t)y * w * 4, w * 4);
+         }
+-        g_ctx->Unmap(g_tex[back][i], 0);
++        g_ctx->Unmap(back, 0);
+     }
+     _mm_mfence();
+     if (at<volatile uint32_t>(h, PC_FRAME_HEADER_SEQ) != seq) return false;
+-    g_front = back;
++    for (int i = 0; i < kLayers; i++)
++        if (sent[i]) g_front[i] = 1 - g_front[i];
+     g_frontHand = hand;
+     g_frameNear = at<float>(h, PC_FRAME_HEADER_MC_NEAR);
+     g_frameFar = at<float>(h, PC_FRAME_HEADER_MC_FAR);
+@@ -879,7 +890,7 @@ static bool mc_alive() {
+     return lastMs && now - lastMs < 2000;
+ }
+ 
+-static uint32_t g_syncExact = 0, g_syncOlder = 0, g_syncMissing = 0, g_syncUntagged = 0;
++static uint32_t g_syncExact = 0, g_syncOlder = 0, g_syncMissing = 0, g_syncUntagged = 0, g_syncOwn = 0;
+ 
+ static void composite(const LuaView& lua, UINT bbW, UINT bbH) {
+     bool test = (HDR(uint32_t, DEBUG_FLAGS) & 1) != 0;
+@@ -912,11 +923,12 @@ static void composite(const LuaView& lua, UINT bbW, UINT bbH) {
+     if (mc) {
+         if (slot && at<uint64_t>(slot, PC_FRAME_HEADER_POSE_ID) == poseId) g_syncExact++;
+         else if (slot) g_syncOlder++;
+-        else g_syncMissing++;
+-        if (g_syncExact + g_syncOlder + g_syncMissing >= 600) {
+-            log("sync: frames with the presented pose: exact %u, older %u, missing %u (untagged %u)", g_syncExact,
+-                g_syncOlder, g_syncMissing, g_syncUntagged);
+-            g_syncExact = g_syncOlder = g_syncMissing = g_syncUntagged = 0;
++        else if (poseId) g_syncMissing++;
++        else g_syncOwn++;  // a cutscene or a conversation: Palworld's own camera, and no Minecraft world is due
++        if (g_syncExact + g_syncOlder + g_syncMissing + g_syncOwn >= 600) {
++            log("sync: frames with the presented pose: exact %u, older %u, missing %u (untagged %u, own view %u)",
++                g_syncExact, g_syncOlder, g_syncMissing, g_syncUntagged, g_syncOwn);
++            g_syncExact = g_syncOlder = g_syncMissing = g_syncUntagged = g_syncOwn = 0;
+         }
+     }
+     // A frame Palworld rendered with its own camera gets the HUD only: blocks would be in the wrong place.
+@@ -1008,13 +1020,13 @@ static void composite(const LuaView& lua, UINT bbW, UINT bbH) {
+     g_ctx->OMSetBlendState(g_blend, bf, 0xffffffff);
+     ID3D11ShaderResourceView* srvs[7] = {};
+     if (mc) {
+-        srvs[0] = g_texSrv[g_front][0];
+-        srvs[1] = g_texSrv[g_front][1];
+-        srvs[2] = g_texSrv[g_front][2];
++        srvs[0] = g_texSrv[g_front[0]][0];
++        srvs[1] = g_texSrv[g_front[1]][1];
++        srvs[2] = g_texSrv[g_front[2]][2];
+         srvs[3] = haveDepth ? g_depthSrv : nullptr;
+         srvs[4] = relight ? g_downSrv[1] : nullptr;
+         srvs[5] = relight ? g_downSrv[0] : nullptr;
+-        srvs[6] = g_texSrv[g_front][3];
++        srvs[6] = g_texSrv[g_front[3]][3];
+     }
+     g_ctx->PSSetShaderResources(0, 7, srvs);
+     g_ctx->Draw(3, 0);
+@@ -1077,7 +1089,7 @@ static void composite_over(UINT bbW, UINT bbH) {
+     g_ctx->PSSetShader(g_ps, nullptr, 0);
+     g_ctx->OMSetBlendState(g_blend, bf, 0xffffffff);
+     ID3D11ShaderResourceView* srvs[7] = {};
+-    srvs[2] = g_texSrv[g_front][2];
++    srvs[2] = g_texSrv[g_front[2]][2];
+     g_ctx->PSSetShaderResources(0, 7, srvs);
+     g_ctx->Draw(3, 0);
+     restore_state(saved);
+diff --git a/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java b/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
+index 3b01c69..7b33036 100644
+--- a/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
++++ b/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
+@@ -8,6 +8,7 @@ import dev.palcraft.bridge.gen.Tune;
+ import dev.palcraft.bridge.link.ErLink;
+ import dev.palcraft.bridge.link.Protocol;
+ import net.minecraft.client.Minecraft;
++import net.minecraft.world.entity.LivingEntity;
+ import org.lwjgl.opengl.GL11;
+ import org.lwjgl.opengl.GL12;
+ import org.lwjgl.opengl.GL15;
+@@ -36,7 +37,8 @@ import java.nio.file.StandardOpenOption;
+  *   then the color buffer is cleared so the hand draws onto a transparent layer;</li>
+  *   <li>after the hand: async readback of the hand layer (the host game lights it like the
+  *   world, but never hides it behind its walls), then the color buffer is cleared again;</li>
+- *   <li>at the end of the frame: async readback of the HUD layer (drawn as is);</li>
++ *   <li>at the end of the frame: async readback of the HUD layer (drawn as is), on the frames that send
++ *   one (see {@link #hudDue});</li>
+  *   <li>next frame: the readbacks are copied into a frames.shm slot, and only then is that
+  *   frame's camera pose handed to the host game, so it always has the matching pixels for the
+  *   pose it renders.</li>
+@@ -104,6 +106,7 @@ public final class FramePassthrough {
+ 	 * under the wanted frame rate for two seconds, go one size down. Once per client tick.
+ 	 */
+ 	public static void watchFrameRate(Minecraft mc) {
++		watchVsync(mc);
+ 		long now = System.currentTimeMillis();
+ 		if (!autoScale || !wanted() || mc.level == null || mc.screen != null || now < settleUntil) {
+ 			slowSince = 0;
+@@ -156,12 +159,17 @@ public final class FramePassthrough {
+ 	private static final boolean[] PENDING = new boolean[CAPTURES];
+ 	/** The set's hand layer was captured (else the hand, if any, is in the HUD layer). */
+ 	private static final boolean[] HAND = new boolean[CAPTURES];
++	/** The set's HUD layer was captured (else the host game keeps the last one it was sent). */
++	private static final boolean[] HUD = new boolean[CAPTURES];
++	private static int sinceHud;
+ 	private static final long[] FRAME_ID = new long[CAPTURES];
+ 	private static final ControlState[] POSE = new ControlState[CAPTURES];
+ 	static {for(int i=0;i<CAPTURES;i++) POSE[i]=new ControlState();}
+ 	private static final float[][] CLIP = new float[CAPTURES][2];
+ 	private static long statsAt;
+ 	private static int rendered, captures, published, waitingCapture, waitingHost;
++	private static long copyNanos, copiedLayers;
++	private static boolean freeRunning;
+ 	private static boolean worldCaptured;
+ 	private static long frameCounter = System.currentTimeMillis() * 1024L;
+ 	/**
+@@ -264,6 +272,7 @@ public final class FramePassthrough {
+ 		}
+ 		pboW = w;
+ 		pboH = h;
++		sinceHud = Integer.MAX_VALUE - 1; // the host game makes new textures for a new size: send every layer
+ 		if (captureTarget != null) captureTarget.destroyBuffers();
+ 		captureTarget = new TextureTarget(w, h, true, Minecraft.ON_OSX);
+ 		Minecraft.getInstance().getMainRenderTarget().bindWrite(true);
+@@ -337,7 +346,7 @@ public final class FramePassthrough {
+ 
+ 	/** GameRenderer.renderLevel, right after the hand: read back the hand layer. */
+ 	public static void afterHand(Minecraft mc) {
+-		if (!worldCaptured) {
++		if (!worldCaptured || !handDrawn(mc)) {
+ 			return;
+ 		}
+ 		RenderTarget main = mc.getMainRenderTarget();
+@@ -348,6 +357,40 @@ public final class FramePassthrough {
+ 		HAND[cur] = true;
+ 	}
+ 
++	/**
++	 * Behind Steve (F5) and for a sleeper Minecraft draws no hand and no screen effect, and the layer would
++	 * be a full copy of nothing. The same test as GameRenderer.renderItemInHand.
++	 */
++	private static boolean handDrawn(Minecraft mc) {
++		return mc.options.getCameraType().isFirstPerson()
++			&& !(mc.getCameraEntity() instanceof LivingEntity sleeper && sleeper.isSleeping());
++	}
++
++	/**
++	 * The HUD changes with Minecraft's ticks, twenty a second, and is one of the three or four full layers
++	 * of a frame. With no screen open it goes out with every Tune.HUD_EVERY_FRAMES-th frame; a screen
++	 * follows the mouse and is sent every frame.
++	 */
++	private static boolean hudDue(Minecraft mc) {
++		if (mc.screen != null || GPU_FRAME[cur] || ++sinceHud >= Tune.HUD_EVERY_FRAMES) {
++			sinceHud = 0;
++			return true;
++		}
++		return false;
++	}
++
++	/**
++	 * Minecraft's own window shows nothing while Palworld draws these frames, so waiting for the monitor
++	 * before each swap only delays the next frame. frameLimit() sets the pace instead. Once per client tick.
++	 */
++	private static void watchVsync(Minecraft mc) {
++		boolean free = activeInHost() && wanted();
++		if (free != freeRunning) {
++			freeRunning = free;
++			mc.getWindow().updateVsync(!free && mc.options.enableVsync().get());
++		}
++	}
++
+ 	/** End of frame, before the main target is shown: read back the overlay layer, publish last frame. */
+ 	public static void endFrame(Minecraft mc) {
+ 		rendered++;
+@@ -355,16 +398,21 @@ public final class FramePassthrough {
+ 		if(statsAt==0) statsAt=now;
+ 		if(now-statsAt>=5_000_000_000L) {
+ 			double seconds=(now-statsAt)/1_000_000_000.0;
+-			LOG.info("Capture pipeline: rendered {} fps, captured {} fps, published {} fps, pending skips {}, host-buffer skips {}",
+-				Math.round(rendered/seconds),Math.round(captures/seconds),Math.round(published/seconds),waitingCapture,waitingHost);
+-			statsAt=now; rendered=captures=published=waitingCapture=waitingHost=0;
++			LOG.info("Capture pipeline: rendered {} fps, captured {} fps, published {} fps, pending skips {}, host-buffer skips {}, "
++					+ "copy {} ms a frame for {} layers",
++				Math.round(rendered/seconds),Math.round(captures/seconds),Math.round(published/seconds),waitingCapture,waitingHost,
++				String.format("%.2f",copyNanos/1.0e6/Math.max(1,published)),String.format("%.1f",copiedLayers/(double)Math.max(1,published)));
++			statsAt=now; rendered=captures=published=waitingCapture=waitingHost=0; copyNanos=copiedLayers=0;
+ 		}
+ 		boolean captured = worldCaptured;
+ 		if (worldCaptured) {
+-			RenderTarget main = mc.getMainRenderTarget();
+-			GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, main.frameBufferId);
+-			captureLayer(main,2,GL12.GL_BGRA,GL12.GL_UNSIGNED_INT_8_8_8_8_REV);
+-			GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
++			HUD[cur] = hudDue(mc);
++			if (HUD[cur]) {
++				RenderTarget main = mc.getMainRenderTarget();
++				GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, main.frameBufferId);
++				captureLayer(main,2,GL12.GL_BGRA,GL12.GL_UNSIGNED_INT_8_8_8_8_REV);
++				GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
++			}
+ 			FRAME_ID[cur] = ++frameCounter;
+ 			POSE[cur].mcFrame = FRAME_ID[cur];
+ 			PENDING[cur] = true;
+@@ -415,7 +463,11 @@ public final class FramePassthrough {
+ 		VarHandle.releaseFence();
+ 		long layer = (long) w * h * 4;
+ 		boolean hand = HAND[set];
++		boolean hud = HUD[set];
++		long copyFrom = System.nanoTime();
+ 		for (int i = 0; !GPU_FRAME[set] && i < (hand ? 4 : 3); i++) {
++			if (i == 2 && !hud) continue;
++			copiedLayers++;
+ 			GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, PBO[set][i]);
+ 			ByteBuffer src = GL30.glMapBufferRange(GL21.GL_PIXEL_PACK_BUFFER, 0, layer, GL30.GL_MAP_READ_BIT);
+ 			if (src != null) {
+@@ -426,9 +478,11 @@ public final class FramePassthrough {
+ 			}
+ 		}
+ 		GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
++		copyNanos += System.nanoTime() - copyFrom;
+ 		frames.putInt(base + 0x04, w);
+ 		frames.putInt(base + 0x08, h);
+-		frames.putInt(base + 0x0C, (hand ? 7 : 3) | (GPU_FRAME[set] ? 8 : 0));
++		// Protocol flags "frame": WORLD, HUD, HAND, GPU.
++		frames.putInt(base + 0x0C, 1 | (hud ? 2 : 0) | (hand ? 4 : 0) | (GPU_FRAME[set] ? 8 : 0));
+ 		frames.putInt(base + 0x30,set);
+ 		frames.putInt(base + 0x34,GPU_GENERATION[set]);
+ 		frames.putLong(base + 0x10, frameId);
+diff --git a/sheets/tuning.json b/sheets/tuning.json
+index b0b8525..abd4298 100644
+--- a/sheets/tuning.json
++++ b/sheets/tuning.json
+@@ -55,6 +55,8 @@
+     ["shot_miss_ticks", 20, "ticks", "lua", "a shot that keeps moving faster than that for this long shows Palworld's own character instead"],
+     ["kill_exp_level_lead", 4, "levels", "lua", "a Pal counts as at most this many levels above the character, so an easy win over a strong Pal does not skip the early game"],
+     ["player_scan_ticks", 20, "ticks", "lua", "co-op: the other players' Palworld bodies are looked over this often, so a newly equipped tool is hidden too"],
+-    ["player_gone_ms", 1500, "ms", "mc", "co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long"]
++    ["player_gone_ms", 1500, "ms", "mc", "co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long"],
++    ["hud_every_frames", 2, "frames", "mc", "with no screen open, Minecraft's HUD layer goes to Palworld with every this-many-th frame (1 = every frame); the last one sent stays up in between"],
++    ["entity_far_tables", 15, "tables", "lua", "every Palworld character is checked for being within entity_radius_m once in this many entity tables; in between only those found within it are asked"]
+   ]
+ }

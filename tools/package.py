@@ -71,6 +71,8 @@ def appleskin():
     return buf.getvalue()
 
 
+# The package cannot carry UE4SS-settings.ini: Melty's loader owns that file and refuses the install
+# ("already provided by UE4SS"). HANDOFF.md, "The load crash", has what the setting in it costs.
 def build_host(out):
     mod = ROOT / "host" / "lua" / NAME
     dll = mod / "palcraft.dll"

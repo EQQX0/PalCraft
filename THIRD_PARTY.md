@@ -37,7 +37,8 @@ servers, signed in with your own Minecraft account.
 
 ## Installed by Melty
 
-**UE4SS 3.0.1** by the UE4SS-RE team. MIT. Melty installs it into Palworld. PalCraft does not ship it.
+**UE4SS 3.0.1** by the UE4SS-RE team. MIT. Melty installs it into Palworld. PalCraft ships none of its
+files.
 Source: <https://github.com/UE4SS-RE/RE-UE4SS>.
 
 ## Build tools

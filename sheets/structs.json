@@ -178,6 +178,17 @@
     ["Body", "preview", "0x48", "u32", 1, "lua", "B_PREVIEW", "1 while Palworld's inventory screen shows its character preview: Minecraft draws Steve there"],
     ["Body", "loadout", "0x4C", "char", 96, "lua", "B_LOADOUT", "Palworld class names of the tools in its weapon slots, in slot order, joined by |, NUL-terminated"],
     ["Body", "ball", "0xAC", "char", 20, "lua", "B_BALL", "item id of the selected Pal Sphere, NUL-terminated"],
-    ["Body", "previewRect", "0xC0", "f32", 4, "mc", "B_PREVIEW_RECT", "where Minecraft has drawn Steve for Palworld's inventory screen, in parts of the picture from its top left: left, top, right, bottom; all 0 = nowhere"]
+    ["Body", "previewRect", "0xC0", "f32", 4, "mc", "B_PREVIEW_RECT", "where Minecraft has drawn Steve for Palworld's inventory screen, in parts of the picture from its top left: left, top, right, bottom; all 0 = nowhere"],
+    ["PlayerTable", "seq", "0x00", "u32", 1, "lua", "PL_SEQ", "seqlock"],
+    ["PlayerTable", "count", "0x04", "u32", 1, "lua", "PL_COUNT", "rows that follow"],
+    ["PlayerTable", "frame", "0x08", "u64", 1, "lua", "PL_FRAME", "tick"],
+    ["PlayerRow", "id", "0x00", "u64", 1, "lua", "PR_ID", "Palworld's player id, the same on every PC of the session; the character's address until Palworld has sent the id"],
+    ["PlayerRow", "flags", "0x08", "u32", 1, "lua", "PR_FLAGS", "group player in flags.json"],
+    ["PlayerRow", "health", "0x0C", "f32", 1, "lua", "PR_HEALTH", "health, 0..1"],
+    ["PlayerRow", "pos", "0x10", "f32", 3, "lua", "PR_POS", "feet, host metres"],
+    ["PlayerRow", "yawDeg", "0x1C", "f32", 1, "lua", "PR_YAW", "Unreal yaw of the body"],
+    ["PlayerRow", "pitchDeg", "0x20", "f32", 1, "lua", "PR_PITCH", "where the player looks, up positive"],
+    ["PlayerRow", "name", "0x30", "char", 32, "lua", "PR_NAME", "player name, NUL-terminated"],
+    ["PlayerRow", "tool", "0x50", "char", 48, "lua", "PR_TOOL", "Palworld class name of the tool in hand, NUL-terminated; empty = bare hands"]
   ]
 }

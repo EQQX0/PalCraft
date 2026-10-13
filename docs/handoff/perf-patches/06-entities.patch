@@ -1,0 +1,118 @@
+diff --git a/host/lua/PalCraft/Scripts/entities.lua b/host/lua/PalCraft/Scripts/entities.lua
+index a2ff314..e065ba2 100644
+--- a/host/lua/PalCraft/Scripts/entities.lua
++++ b/host/lua/PalCraft/Scripts/entities.lua
+@@ -11,5 +11,7 @@ local MAXN = P.const.MAX_ENTITIES
+ local util
+-local byId = {}      -- id -> { actor, kind, maxHp }
++local byId = {}      -- id -> { actor, kind, maxHp }, and what a Pal never changes: name, box, its health component
+ local frame = 0
+ local known = {}     -- every PalCharacter alive, by address
++local near = {}      -- those of them within reach of Steve at the last look over all of them
++local lookIn = 0     -- tables until the next such look
+ local watching = false
+@@ -54,5 +56,5 @@ end
+ 
+-local function describe(a, pawnAddr, feet, r2)
++-- id = the address known and near keep a under.
++local function describe(a, id, pawnAddr, feet, r2)
+     if not a:IsValid() then return nil end
+-    local id = a:GetAddress()
+     if id == pawnAddr then return nil end                                      -- player
+@@ -63,15 +65,21 @@ local function describe(a, pawnAddr, feet, r2)
+     if dx * dx + dy * dy + dz * dz > r2 then return nil end
+-    local cp = a.CharacterParameterComponent
++    -- Its name, its box and its kind stay as they are while it is listed: asked once, they save ten calls
++    -- into Unreal per Pal and table. A new character at an old address is another actor and starts over.
++    local e = byId[id]
++    if e and not rawequal(e.actor, a) then e = nil end
++    local cp = e and e.cp or a.CharacterParameterComponent
+     if not cp or not cp:IsValid() then return nil end
+-    local hp, maxHp = cp:GetHP().Value / 1000, cp:GetMaxHP().Value / 1000
+-    local radius, half = 0.4, 0.9
+-    local cap = a.CapsuleComponent
+-    if cap and cap:IsValid() then radius, half = cap:GetScaledCapsuleRadius() / 100, cap:GetScaledCapsuleHalfHeight() / 100 end
+-    -- A Lamball's capsule is a 60 cm ball that the grass and the terrain blocks around it swallow. Give small Pals
+-    -- a box Steve can find with a sword, grown upward from where they stand.
+-    local feetY = y - half
+-    radius, half = math.max(radius, P.tune.pal_box_min_radius_m), math.max(half, P.tune.pal_box_min_half_m)
+-    local name = a:GetClass():GetFName():ToString():gsub("^BP_", ""):gsub("_C$", "")
+-    local seen = byId[id]
+-    local kind = seen and seen.kind or classify(a, cp, name, maxHp)
++    local hp = cp:GetHP().Value / 1000
++    if not e then
++        local maxHp = cp:GetMaxHP().Value / 1000
++        local radius, half = 0.4, 0.9
++        local cap = a.CapsuleComponent
++        if cap and cap:IsValid() then radius, half = cap:GetScaledCapsuleRadius() / 100, cap:GetScaledCapsuleHalfHeight() / 100 end
++        local name = a:GetClass():GetFName():ToString():gsub("^BP_", ""):gsub("_C$", "")
++        e = { actor = a, cp = cp, kind = classify(a, cp, name, maxHp), maxHp = maxHp, name = name:sub(1, 47),
++            -- A Lamball's capsule is a 60 cm ball that the grass and the terrain blocks around it swallow. Give small
++            -- Pals a box Steve can find with a sword, grown upward from where they stand.
++            drop = half, radius = math.max(radius, P.tune.pal_box_min_radius_m), half = math.max(half, P.tune.pal_box_min_half_m) }
++    end
++    local feetY = y - e.drop
+     local dead = cp:IsDead() or hp <= 0
+@@ -79,8 +87,26 @@ local function describe(a, pawnAddr, feet, r2)
+     local flags = P.entity.WORLD_BOX | (dead and P.entity.DEAD or 0)
+-    local e = seen or { actor = a, kind = kind }
+-    e.maxHp, e.pos, e.seen = maxHp, { x, y, z }, frame
++    e.pos, e.seen = { x, y, z }, frame
+     byId[id] = e
+-    return string.pack("<I8I4I4fffffffffffffffI4c48", id, kind, 0,
++    return string.pack("<I8I4I4fffffffffffffffI4c48", id, e.kind, 0,
+         x, feetY, z, 0, math.sin(yaw / 2), 0, math.cos(yaw / 2),
+-        x, feetY + half, z, radius, half, radius, hp, maxHp, flags, name:sub(1, 47))
++        x, feetY + e.half, z, e.radius, e.half, e.radius, hp, e.maxHp, flags, e.name)
++end
++
++-- Most of Palworld's characters are out of reach, and finding that out is a call into Unreal each. All of them
++-- are looked over every entity_far_tables tables; in between only those found within reach then are asked, so
++-- a Pal that walks into reach shows up that much later, at the far edge.
++local function look_over(pawnAddr, feet, r2)
++    near = {}
++    for addr, a in pairs(known) do
++        if not a:IsValid() then
++            known[addr] = nil
++        elseif addr ~= pawnAddr then
++            local ok, l = pcall(a.K2_GetActorLocation, a)
++            if ok then
++                local x, y, z = U.to_host(l.X, l.Y, l.Z)
++                local dx, dy, dz = x - feet[1], y - feet[2], z - feet[3]
++                if dx * dx + dy * dy + dz * dz <= r2 then near[addr] = a end
++            end
++        end
++    end
+ end
+@@ -96,10 +122,14 @@ function M.tick(env)
+         watch()
+-        for addr, a in pairs(known) do
+-            if not a:IsValid() then
+-                known[addr] = nil
+-            elseif #rows < MAXN then
+-                local ok, row = pcall(describe, a, pawnAddr, env.feet, r2)
+-                if ok and row then rows[#rows + 1] = row end
+-            end
++        lookIn = lookIn - 1
++        if lookIn <= 0 then
++            lookIn = P.tune.entity_far_tables
++            look_over(pawnAddr, env.feet, r2)
++        end
++        for addr, a in pairs(near) do
++            if #rows >= MAXN then break end
++            local ok, row = pcall(describe, a, addr, pawnAddr, env.feet, r2)
++            if ok and row then rows[#rows + 1] = row end
+         end
++    else
++        lookIn = 0
+     end
+diff --git a/sheets/tuning.json b/sheets/tuning.json
+index b0b8525..526b573 100644
+--- a/sheets/tuning.json
++++ b/sheets/tuning.json
+@@ -57,3 +57,4 @@
+     ["player_scan_ticks", 20, "ticks", "lua", "co-op: the other players' Palworld bodies are looked over this often, so a newly equipped tool is hidden too"],
+-    ["player_gone_ms", 1500, "ms", "mc", "co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long"]
++    ["player_gone_ms", 1500, "ms", "mc", "co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long"],
++    ["entity_far_tables", 15, "tables", "lua", "every Palworld character is checked for being within entity_radius_m once in this many entity tables; in between only those found within it are asked"]
+   ]

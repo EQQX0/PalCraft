@@ -1,0 +1,27 @@
+diff --git a/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java b/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
+index 5f1cbff..72ec69e 100644
+--- a/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
++++ b/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
+@@ -107,2 +107,3 @@ public final class FramePassthrough {
+ 	public static void watchFrameRate(Minecraft mc) {
++		watchVsync(mc);
+ 		long now = System.currentTimeMillis();
+@@ -166,2 +167,3 @@ public final class FramePassthrough {
+ 	private static long copyNanos, copiedLayers;
++	private static boolean freeRunning;
+ 	private static boolean worldCaptured;
+@@ -361,2 +363,14 @@ public final class FramePassthrough {
+ 
++	/**
++	 * Minecraft's own window shows nothing while Palworld draws these frames, so waiting for the monitor
++	 * before each swap only delays the next frame. frameLimit() sets the pace instead. Once per client tick.
++	 */
++	private static void watchVsync(Minecraft mc) {
++		boolean free = activeInHost() && wanted();
++		if (free != freeRunning) {
++			freeRunning = free;
++			mc.getWindow().updateVsync(!free && mc.options.enableVsync().get());
++		}
++	}
++
+ 	/** End of frame, before the main target is shown: read back the overlay layer, publish last frame. */

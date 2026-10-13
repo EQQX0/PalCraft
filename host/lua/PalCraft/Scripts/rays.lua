@@ -11,23 +11,35 @@ local RAY, HIT = P.const.RAY_SIZE, P.const.HIT_SIZE
 local MISS = string.pack("<ffffffI4I4", 0, 0, 0, 0, 0, 0, 0, 0)
 local black = { R = 0, G = 0, B = 0, A = 0 }
 local none = {}
+local from, to = { X = 0, Y = 0, Z = 0 }, { X = 0, Y = 0, Z = 0 } -- every trace's ends: read by the call, kept by nobody
 local KSL
 local job -- the batch in progress
+local owners = {} -- component address -> its owner is a Pal or a person; forgotten with each batch
 
--- Pals and people are not terrain: a ray that hits one carries on behind it.
+-- Pals and people are not terrain: a ray that hits one carries on behind it. A batch lands on the same few
+-- pieces of ground thousands of times, and asking a piece for its owner is four calls into Unreal.
+local function owned_by_character(hit)
+    local c = hit.Component:Get()
+    if not c or not c:IsValid() then return false end
+    local at = c:GetAddress()
+    local yes = owners[at]
+    if yes == nil then
+        local owner = c:GetOwner()
+        yes = owner and owner:IsValid() and owner.CharacterParameterComponent ~= nil and owner.CharacterParameterComponent:IsValid() or false
+        owners[at] = yes
+    end
+    return yes
+end
 local function is_character(hit)
-    local ok, yes = pcall(function()
-        local c = hit.Component:Get()
-        local owner = c and c:IsValid() and c:GetOwner()
-        return owner and owner:IsValid() and owner.CharacterParameterComponent ~= nil and owner.CharacterParameterComponent:IsValid()
-    end)
+    local ok, yes = pcall(owned_by_character, hit)
     return ok and yes
 end
 
 local function line(pawn, sx, sy, sz, ex, ey, ez)
     local hit = {}
-    local blocked = KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
-        0, false, none, 0, hit, true, black, black, 0.0)
+    from.X, from.Y, from.Z = sz * 100, sx * 100, sy * 100
+    to.X, to.Y, to.Z = ez * 100, ex * 100, ey * 100
+    local blocked = KSL:LineTraceSingle(pawn, from, to, 0, false, none, 0, hit, true, black, black, 0.0)
     U.release(hit)
     if blocked then return hit end
 end
@@ -49,11 +61,8 @@ local function trace(pawn, sx, sy, sz, ex, ey, ez)
         return string.pack("<ffffffI4I4", sx, sy, sz, 0, 1, 0, 1, 0)   -- solid right here
     end
     for _ = 1, 3 do
-        local hit = {}
-        local blocked = KSL:LineTraceSingle(pawn, { X = sz * 100, Y = sx * 100, Z = sy * 100 }, { X = ez * 100, Y = ex * 100, Z = ey * 100 },
-            0, false, none, 0, hit, true, black, black, 0.0)
-        U.release(hit)
-        if not blocked then return MISS end
+        local hit = line(pawn, sx, sy, sz, ex, ey, ez)
+        if not hit then return MISS end
         local p, n = hit.ImpactPoint, hit.ImpactNormal
         if not is_character(hit) then
             return string.pack("<ffffffI4I4", p.Y / 100, p.Z / 100, p.X / 100, n.Y, n.Z, n.X, 1, 0)
@@ -80,6 +89,7 @@ function M.tick(env)
     if not job or job.seq ~= req then
         count = math.min(count, P.const.MAX_RAYS)
         job = { seq = req, count = count, data = count > 0 and shm.read(OFF + P.const.RAYS_OFF_RAYS, count * RAY) or "", i = 0, out = {} }
+        owners = {}
     end
     local t0, budget, least = os.clock(), P.tune.ray_budget_ms / 1000, P.tune.ray_min_per_tick
     local pawn, data, out, done = env.pawn, job.data, job.out, 0

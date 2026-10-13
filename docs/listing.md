@@ -1,3 +1,5 @@
+**Updated 13 October 2026.** Version 0.2.2 fixes the crash a minute into a world and most crashes while a world loads. The full list sits under "New in 0.2.2".
+
 Play Palworld as Steve. You move, look, build, dig and fight with Minecraft's controls, and you see it happen inside Palworld's world.
 
 PalCraft runs both games at once. Minecraft: Java Edition owns your player, your camera, your blocks and your weapons. Palworld owns the islands and the Pals. Palworld draws its frame from Minecraft's camera, then PalCraft paints Minecraft's blocks, hand and hotbar into that frame, hidden behind Palworld's hills and trees where they should be.
@@ -62,6 +64,17 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 2. Pick or upload a skin and save.
 3. Press Play, then press F5 in the game to see it.
 
+## New in 0.2.2
+
+- Fixed: Palworld crashed about a minute into a world.
+- Fixed: Palworld crashed in most world loads. One crash in 6 test loads remains.
+- Fixed: Steve began some worlds 10 km up and fell.
+- Fixed: Steve fell through ground that had not loaded yet. After a long fall with no ground under him he goes back where he last stood.
+- Fixed: Steve stuck on Palworld's slopes.
+- Fixed: Minecraft froze at a high render distance. PalCraft caps it.
+- Fixed: a Pal waiting in your party showed as a creature in the sky above you.
+- Faster: Minecraft no longer waits for the screen's refresh between frames, and Palworld spends less time on terrain.
+
 ## New in 0.2.1
 
 - Palworld mode shows Steve. In 0.2.0 F8 showed Palworld's own character.
@@ -80,9 +93,11 @@ PalCraft signs Minecraft in with your own account, so Steve wears your account's
 - Kills as Steve give Palworld experience. A message tells you when your character levels up.
 - A kit that gained items in an update tops itself up for existing players.
 
-## Limits in 0.2.1
+## Limits in 0.2.2
 
 - Single player.
+- Palworld can still crash while a world loads, once in 6 test loads. Press Play again.
+- Palworld's memory grew by up to 70 MB a minute while Steve explored in testing. Restart both games after a long session.
 - DirectX 11 only. Remove `-dx12` from Palworld's Steam launch options if you added it.
 - Digging gives materials and leaves Palworld's terrain in place. You cannot tunnel through a hill.
 - Nights are cold. Hold a torch, stand by a fire or wear leather.

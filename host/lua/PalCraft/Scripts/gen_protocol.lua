@@ -9,6 +9,7 @@ P.off = {
     luastate = 0x000C00,
     probe = 0x000D00,
     body = 0x000D40,
+    players = 0x002000,
     rays = 0x100000,
     entities = 0x200000,
     damage = 0x280000,
@@ -210,6 +211,21 @@ P.Body = {
     ["ball"] = { 0xAC, "<c20", 20 },
     ["previewRect"] = { 0xC0, "<ffff", 16 },
 }
+P.PlayerTable = {
+    ["seq"] = { 0x00, "<I4", 4 },
+    ["count"] = { 0x04, "<I4", 4 },
+    ["frame"] = { 0x08, "<I8", 8 },
+}
+P.PlayerRow = {
+    ["id"] = { 0x00, "<I8", 8 },
+    ["flags"] = { 0x08, "<I4", 4 },
+    ["health"] = { 0x0C, "<f", 4 },
+    ["pos"] = { 0x10, "<fff", 12 },
+    ["yawDeg"] = { 0x1C, "<f", 4 },
+    ["pitchDeg"] = { 0x20, "<f", 4 },
+    ["name"] = { 0x30, "<c32", 32 },
+    ["tool"] = { 0x50, "<c48", 48 },
+}
 P.state = {
     CAMERA_VALID = 0x001,
     PLAYER_VALID = 0x002,
@@ -256,7 +272,16 @@ P.damage = {
     NOT_BY_PLAYER = 0x4,
     WORLD_RAY = 0x8,
 }
+P.player = {
+    CROUCH = 0x1,
+    SWIM = 0x2,
+    DEAD = 0x4,
+    ACT = 0x8,
+}
 P.const = {
+    MAX_PLAYERS = 32,
+    PLAYER_SIZE = 0x80,
+    PLAYERS_OFF_ROWS = 0x10,
     MAGIC = 0x434D484D,
     VERSION = 1,
     SHM_SIZE = 0x800000,
@@ -325,11 +350,16 @@ P.tune = {
     shot_match_deg = 2.5,
     shot_miss_ticks = 20,
     kill_exp_level_lead = 4,
+    player_scan_ticks = 20,
+    world_ceiling_m = 5000,
+    coop_enabled = 0,
+    entity_far_tables = 15,
+    entity_near_margin_m = 12,
 }
 P.hook = {
-    tick = "/Game/Pal/Blueprint/Controller/BP_PalPlayerController.BP_PalPlayerController_C:ReceiveTick",
-    build_screen = "/Game/Pal/Blueprint/UI/UserInterface/InGame/Construction/WBP_IngameConstruction.WBP_IngameConstruction_C",
+    tick = "/Script/Pal.PalHUDInGame:TickWorldHUDs",
     menu_preview = "/Game/Pal/Blueprint/UI/SceneCaptureWidget/WBP_PalPlayerInframeRender.WBP_PalPlayerInframeRender_C",
+    player_chars = "/Script/Pal.PalPlayerCharacter",
 }
 P.listing = {
     slug = "palcraft-6",

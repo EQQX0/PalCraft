@@ -13,16 +13,15 @@ local OFF, B = P.off.body, P.Body
 -- Named parts of Palworld's player gauge. Faded parts keep their place in the layout. The stat-point banner
 -- sits where Minecraft's hotbar is drawn; Minecraft's chat says when there are points to spend. The weapon
 -- panel is Minecraft's hotbar now.
-local FADE = { Canvas_HP = true, WBP_IngameHungerGauge = true, WBP_Ingame_Thermometer = true,
-    WBP_IngameStatusPoint = true, Canvas_WeaponInfo = true }
-local LEVEL = "WBP_PLLvExp_C" -- its level and experience: Minecraft's experience bar shows both
+local FADE = { "WBP_IngameHungerGauge", "WBP_Ingame_Thermometer", "WBP_IngameStatusPoint", "Canvas_WeaponInfo" }
+local HEALTH = "Canvas_HP" -- a part of the gauge like those, but Palworld gave it no property: found by walking
+local LEVEL = "WBP_PLLvExp" -- its level and experience: Minecraft's experience bar shows both
+local PLAYER_UI = "WBP_PlayerUI_C" -- the HUD widget all of these sit in
 local PREVIEW_HOME = "CanvasPanelChara" -- the panel of the inventory screen that holds the character preview
 local DEPTH = 6
 local SLOTS = 8 -- Minecraft's hotbar has nine: eight tools and the sphere
 
-local parts            -- name -> widget, of the gauge on screen
 local swapped = false
-local nextFind = 0
 local reapply = 0
 local healthTick = 0
 local sentHealth, sentAway, sentPreview = -1, -1, -1
@@ -31,88 +30,128 @@ local PANEL, USER
 local building = false
 local previewFaded, previewCount = false, 0
 
-local function collect(w, depth, out)
-    if not (w and w:IsValid()) then return end
-    local name = w:GetFName():ToString()
-    if FADE[name] then out[name] = w end
-    if depth <= 0 then return end
+-- A property that holds a widget, or nil.
+local function part(owner, name)
+    local ok, w = pcall(function() return owner[name] end)
+    if ok and w and w:IsValid() then return w end
+    return nil
+end
+
+-- No widget is kept from one tick to the next (see util.lua). Palworld's own properties lead to the gauge
+-- each time: the HUD of the player controller, its list of widgets, the player panel in that list.
+local function gauge(pc)
+    local hud = pc.MyHUD
+    if not (hud and hud:IsValid()) then return nil end
+    local ui
+    hud.HUDWidgets:ForEach(function(_, e)
+        if ui then return end
+        local w = e:get()
+        if w and w:IsValid() and w:GetClass():GetFName():ToString() == PLAYER_UI then ui = w end
+    end)
+    local side = ui and part(ui, "WBP_PlayerSideInfo_Separated")
+    return ui, side and part(side, "WBP_Ingame_PlayerGauge_Separated")
+end
+
+-- The way from a widget down to the one of a name, as steps: -1 into a widget's own tree, n to child n.
+-- Steps are numbers, so the way can be kept where the widget cannot.
+local function way_to(w, name, depth, steps)
+    if not (w and w:IsValid()) then return false end
+    if w:GetFName():ToString() == name then return true end
+    if depth <= 0 then return false end
     if w:IsA(USER) then
         local tree = w.WidgetTree
-        if tree and tree:IsValid() then collect(tree.RootWidget, depth - 1, out) end
+        if tree and tree:IsValid() then
+            steps[#steps + 1] = -1
+            if way_to(tree.RootWidget, name, depth - 1, steps) then return true end
+            steps[#steps] = nil
+        end
     elseif w:IsA(PANEL) then
-        for i = 0, w:GetChildrenCount() - 1 do collect(w:GetChildAt(i), depth - 1, out) end
+        for i = 0, w:GetChildrenCount() - 1 do
+            steps[#steps + 1] = i
+            if way_to(w:GetChildAt(i), name, depth - 1, steps) then return true end
+            steps[#steps] = nil
+        end
     end
+    return false
 end
-
--- Searching all of Palworld's objects takes tens of milliseconds: once per gauge, and again only after
--- Palworld has thrown that gauge away (a new world).
-local function find()
+local function walk(w, steps, name)
+    for i = 1, #steps do
+        if not (w and w:IsValid()) then return nil end
+        if steps[i] < 0 then
+            local tree = w.WidgetTree
+            w = tree and tree:IsValid() and tree.RootWidget or nil
+        else
+            w = w:GetChildAt(steps[i])
+        end
+    end
+    if w and w:IsValid() and w:GetFName():ToString() == name then return w end
+    return nil
+end
+local healthWay
+local function health_part(g)
+    local w = healthWay and walk(g, healthWay, HEALTH)
+    if w then return w end
     PANEL = PANEL or StaticFindObject("/Script/UMG.PanelWidget")
     USER = USER or StaticFindObject("/Script/UMG.UserWidget")
-    if not (PANEL and PANEL:IsValid() and USER and USER:IsValid()) then return end
-    for _, w in ipairs(FindAllOf("WBP_Ingame_PlayerGauge_Separated_C") or {}) do
+    local steps = {}
+    healthWay = way_to(g, HEALTH, DEPTH, steps) and steps or nil
+    return healthWay and walk(g, healthWay, HEALTH)
+end
+
+-- Fades Palworld's gauges out or back in. False while Palworld has no gauge on screen.
+local function apply(pc, want)
+    local ui, g = gauge(pc)
+    if not g then return false end
+    local opacity = want and 0 or 1
+    for _, name in ipairs(FADE) do
+        local w = part(g, name)
+        if w then w:SetRenderOpacity(opacity) end
+    end
+    local hp = health_part(g)
+    if hp then hp:SetRenderOpacity(opacity) end
+    local level = part(ui, LEVEL)
+    if level then level:SetRenderOpacity(opacity) end
+    return true
+end
+
+-- Build mode has no menu and no mouse pointer: the character's builder says when it is on.
+local function in_build_mode(pawn)
+    local b = pawn.BuilderComponent
+    return b ~= nil and b:IsValid() and b:IsInBuildingMode() == true
+end
+
+-- The character previews Palworld has made (its inventory screen has one, character creation another).
+-- No property leads to them, so their paths are kept: see util.lua for what that costs. A search looks at
+-- every object Palworld has, tens of milliseconds, so it runs only while a menu is open and no preview of
+-- the inventory screen is known, and then once per hud_find_ms.
+local PREVIEW = P.hook.menu_preview:match("%.([%w_]+)$")
+local previews = { list = {}, pc = 0, nextSearch = 0 }
+function previews.search()
+    local list = {}
+    for _, w in ipairs(FindAllOf(PREVIEW) or {}) do
         if w:IsValid() then
-            local out = {}
-            collect(w, DEPTH, out)
-            if out.Canvas_HP then
-                parts = out
-                break
-            end
+            -- Those under /Game are the patterns Palworld copies its screens from, not screens.
+            local path = U.path(w)
+            if path:find("/Engine/Transient", 1, true) then list[#list + 1] = path end
         end
     end
-    if not parts then return end
-    local n = 0
-    for _, w in ipairs(FindAllOf(LEVEL) or {}) do
-        -- The one on screen has its widgets built; the pattern Palworld copies it from has none.
-        if w:IsValid() and w.WidgetTree and w.WidgetTree:IsValid() then
-            n = n + 1
-            parts[LEVEL .. n] = w
+    previews.list = list
+end
+-- Drops the ones Palworld has thrown away; true if test fits one of the rest.
+function previews.any(test)
+    local hit = false
+    for i = #previews.list, 1, -1 do
+        local w = U.find(previews.list[i])
+        if not w then
+            table.remove(previews.list, i)
+        elseif not hit and test(w) then
+            hit = true
         end
     end
+    return hit
 end
 
--- Screens Palworld makes when the player first asks for them: take those that exist, then let Palworld tell
--- us about each new one. Neither works before Palworld has loaded the class, so ask until it has.
-local function watcher(path)
-    local self = { list = {}, on = false }
-    local short = path:match("%.([%w_]+)$")
-    function self.watch()
-        if self.on then return end
-        local class = StaticFindObject(path)
-        if not (class and class:IsValid()) then return end
-        self.on = true
-        for _, w in ipairs(FindAllOf(short) or {}) do
-            if w:IsValid() then self.list[#self.list + 1] = w end
-        end
-        local gen = _G.PALCRAFT_GEN
-        NotifyOnNewObject(path, function(w)
-            if gen ~= _G.PALCRAFT_GEN then return true end
-            self.list[#self.list + 1] = w
-        end)
-    end
-    -- Drops the ones Palworld has thrown away; true if test fits one of the rest.
-    function self.any(test)
-        local hit = false
-        for i = #self.list, 1, -1 do
-            local w = self.list[i]
-            if not w:IsValid() then
-                table.remove(self.list, i)
-            elseif not hit and test(w) then
-                hit = true
-            end
-        end
-        return hit
-    end
-    return self
-end
-local builders = watcher(P.hook.build_screen)
-local previews = watcher(P.hook.menu_preview)
-
-local function visible(w)
-    return w:IsVisible()
-end
-
--- The preview of the inventory screen (character creation has one too), with every panel around it showing.
+-- The preview of the inventory screen, with every panel around it showing.
 local function in_inventory(w)
     local parent = w:GetParent()
     return parent and parent:IsValid() and parent:GetFName():ToString() == PREVIEW_HOME
@@ -134,16 +173,6 @@ local function fade_previews(want)
         return false
     end)
     previewFaded, previewCount = want, #previews.list
-end
-
-local function alive()
-    return parts and parts.Canvas_HP:IsValid()
-end
-
-local function apply(want)
-    for _, w in pairs(parts) do
-        if w:IsValid() then w:SetRenderOpacity(want and 0 or 1) end
-    end
 end
 
 -- What the character carries in its weapon slots, as Palworld's class names without their BP_ and _C.
@@ -198,9 +227,7 @@ function M.tick(env)
     healthTick = healthTick - 1
     if env.hasPawn and healthTick <= 0 then
         healthTick = P.tune.hud_health_ticks
-        builders.watch()
-        previews.watch()
-        building = body and builders.any(visible)
+        building = body and (U.guard("build_mode", in_build_mode, env.pawn) or false)
         local cp = env.pawn.CharacterParameterComponent
         if cp and cp:IsValid() then
             local max = cp:GetMaxHP().Value
@@ -211,6 +238,13 @@ function M.tick(env)
             end
         end
         if body then U.guard("loadout", loadout, env) end
+        -- The paths of one world are of no use in the next, and asking for a path that is gone is slow.
+        local at = env.pc:GetAddress()
+        if at ~= previews.pc then previews.pc, previews.list, previewFaded = at, {}, false end
+        if body and menu and U.now_ms() >= previews.nextSearch and not previews.any(in_inventory) then
+            previews.nextSearch = U.now_ms() + P.tune.hud_find_ms
+            previews.search()
+        end
         if body ~= previewFaded or #previews.list ~= previewCount then fade_previews(body) end
         local preview = (body and menu and previews.any(preview_up)) and 1 or 0
         if preview ~= sentPreview then
@@ -219,22 +253,11 @@ function M.tick(env)
         end
     end
 
-    if body and not alive() and U.now_ms() >= nextFind then
-        nextFind = U.now_ms() + P.tune.hud_find_ms
-        parts = nil
-        find()
-    end
-    if not alive() then
-        swapped = false
-        return
-    end
     -- Palworld animates these gauges itself (low health, hunger): say it again now and then.
     reapply = reapply - 1
-    if body ~= swapped or (swapped and reapply <= 0) then
-        swapped = body
-        reapply = P.tune.hud_reapply_ticks
-        apply(body)
-    end
+    if body == swapped and not (body and reapply <= 0) then return end
+    reapply = P.tune.hud_reapply_ticks
+    swapped = U.guard("hud_swap", apply, env.pc, body) and body or false
 end
 
 return M

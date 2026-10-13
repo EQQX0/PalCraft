@@ -2,6 +2,7 @@ package dev.palcraft.bridge.client;
 
 import com.mojang.blaze3d.platform.InputConstants;
 import dev.palcraft.bridge.CoordMap;
+import dev.palcraft.bridge.gen.Tune;
 import dev.palcraft.bridge.link.GameState;
 import dev.palcraft.bridge.link.ErLink;
 import dev.palcraft.bridge.link.Protocol;
@@ -49,6 +50,15 @@ public class ErBridgeClient implements ClientModInitializer {
 
 		ClientTickEvents.START_CLIENT_TICK.register(MovingPlatformClient::tick);
 		ClientTickEvents.END_CLIENT_TICK.register(mc -> {
+			// Render distance 32 froze Minecraft inside its 3 GB of memory, and the next start read 32 back
+			// from options.txt (2026-10-12).
+			int maxView = (int) Tune.MC_MAX_VIEW_CHUNKS;
+			if (mc.options.renderDistance().get() > maxView) {
+				mc.options.renderDistance().set(maxView);
+			}
+			if (mc.options.simulationDistance().get() > maxView) {
+				mc.options.simulationDistance().set(maxView);
+			}
 			while (cameraModeKey.consumeClick()) {
 				CameraSync.toggleMode();
 				toast(mc, "Camera: " + CameraSync.mode());
@@ -99,6 +109,7 @@ public class ErBridgeClient implements ClientModInitializer {
 			WorldBootstrap.tick(mc);
 			HostBody.tick(mc);
 			LoadoutHud.tick(mc);
+			CoopPlayers.tick(mc);
 			Unstuck.tick(mc);
 			GatherClient.tick(mc);
 			BodyHud.tick(mc);

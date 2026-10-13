@@ -1,5 +1,6 @@
 package dev.palcraft.bridge.client.mixin;
 
+import dev.palcraft.bridge.client.CoopSteve;
 import net.minecraft.client.resources.DefaultPlayerSkin;
 import net.minecraft.client.resources.PlayerSkin;
 import org.spongepowered.asm.mixin.Final;
@@ -14,6 +15,7 @@ import java.util.UUID;
 /**
  * Players without a skin of their own (the bridge's offline player) look like classic Steve
  * (wide model) instead of whichever of the 18 default skins their UUID happens to pick.
+ * A co-op friend keeps the skin their id picks, so friends can be told apart.
  */
 @Mixin(DefaultPlayerSkin.class)
 public abstract class DefaultPlayerSkinMixin {
@@ -23,6 +25,9 @@ public abstract class DefaultPlayerSkinMixin {
 
 	@Inject(method = "get(Ljava/util/UUID;)Lnet/minecraft/client/resources/PlayerSkin;", at = @At("HEAD"), cancellable = true)
 	private static void palcraft$classicSteve(UUID uuid, CallbackInfoReturnable<PlayerSkin> cir) {
+		if (uuid.getMostSignificantBits() == CoopSteve.UUID_MSB) {
+			return;
+		}
 		for (PlayerSkin skin : DEFAULT_SKINS) {
 			if (skin.model() == PlayerSkin.Model.WIDE && skin.texture().getPath().endsWith("/steve.png")) {
 				cir.setReturnValue(skin);

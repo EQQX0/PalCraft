@@ -879,7 +879,7 @@ static bool mc_alive() {
     return lastMs && now - lastMs < 2000;
 }
 
-static uint32_t g_syncExact = 0, g_syncOlder = 0, g_syncMissing = 0, g_syncUntagged = 0;
+static uint32_t g_syncExact = 0, g_syncOlder = 0, g_syncMissing = 0, g_syncUntagged = 0, g_syncOwn = 0;
 
 static void composite(const LuaView& lua, UINT bbW, UINT bbH) {
     bool test = (HDR(uint32_t, DEBUG_FLAGS) & 1) != 0;
@@ -912,11 +912,12 @@ static void composite(const LuaView& lua, UINT bbW, UINT bbH) {
     if (mc) {
         if (slot && at<uint64_t>(slot, PC_FRAME_HEADER_POSE_ID) == poseId) g_syncExact++;
         else if (slot) g_syncOlder++;
-        else g_syncMissing++;
-        if (g_syncExact + g_syncOlder + g_syncMissing >= 600) {
-            log("sync: frames with the presented pose: exact %u, older %u, missing %u (untagged %u)", g_syncExact,
-                g_syncOlder, g_syncMissing, g_syncUntagged);
-            g_syncExact = g_syncOlder = g_syncMissing = g_syncUntagged = 0;
+        else if (poseId) g_syncMissing++;
+        else g_syncOwn++;  // a cutscene or a conversation: Palworld's own camera, and no Minecraft world is due
+        if (g_syncExact + g_syncOlder + g_syncMissing + g_syncOwn >= 600) {
+            log("sync: frames with the presented pose: exact %u, older %u, missing %u (untagged %u, own view %u)",
+                g_syncExact, g_syncOlder, g_syncMissing, g_syncUntagged, g_syncOwn);
+            g_syncExact = g_syncOlder = g_syncMissing = g_syncUntagged = g_syncOwn = 0;
         }
     }
     // A frame Palworld rendered with its own camera gets the HUD only: blocks would be in the wrong place.

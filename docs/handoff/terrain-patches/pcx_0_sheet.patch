@@ -1,0 +1,11 @@
+--- a/sheets/tuning.json
++++ b/sheets/tuning.json
+@@ -57,3 +57,7 @@
+     ["player_scan_ticks", 20, "ticks", "lua", "co-op: the other players' Palworld bodies are looked over this often, so a newly equipped tool is hidden too"],
+-    ["player_gone_ms", 1500, "ms", "mc", "co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long"]
++    ["player_gone_ms", 1500, "ms", "mc", "co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long"],
++    ["world_ceiling_m", 5000, "m", "lua", "a character higher than this is not in the world: Palworld keeps one it has not placed yet 10 km up (seen at 10000, 10000, 10000 m)"],
++    ["ray_below_m", 300, "m", "mc", "how far below Steve's feet a column's ground ray reaches; a miss then means no world below, not a drop"],
++    ["fall_rescue_m", 12, "m", "mc", "Steve is put back where he last stood once he has fallen this far with no Palworld ground known under him"],
++    ["step_height_m", 1.1, "m", "mc", "Steve walks up steps this high: Palworld's 45 degree slopes come out as one block per column"]
+   ]

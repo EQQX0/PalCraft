@@ -1,0 +1,163 @@
+diff --git a/host/lua/PalCraft/Scripts/bridge.lua b/host/lua/PalCraft/Scripts/bridge.lua
+index 7061637..480e7b6 100644
+--- a/host/lua/PalCraft/Scripts/bridge.lua
++++ b/host/lua/PalCraft/Scripts/bridge.lua
+@@ -83,3 +83,3 @@ local function on_tick(pc)
+     env.pc, env.pawn, env.hasPawn, env.ctrl, env.cflags, env.tick, env.linked = pc, pawn, hasPawn, ctrl, cflags, tick, ctrl ~= nil
+-    env.busy, env.dead, env.steves = not hasPawn, false, false
++    env.busy, env.dead, env.steves, env.placed = not hasPawn, false, false, hasPawn
+ 
+@@ -94,3 +94,3 @@ local function on_tick(pc)
+     if hasPawn then
+-        flags = flags | P.state.PLAYER_VALID | P.state.CAMERA_VALID
++        flags = flags | P.state.CAMERA_VALID | (env.placed and P.state.PLAYER_VALID or 0)
+         local usable = ctrl ~= nil and not env.busy
+diff --git a/host/lua/PalCraft/Scripts/life.lua b/host/lua/PalCraft/Scripts/life.lua
+index 0381c03..ebd4add 100644
+--- a/host/lua/PalCraft/Scripts/life.lua
++++ b/host/lua/PalCraft/Scripts/life.lua
+@@ -21,2 +21,5 @@ function M.tick(env)
+     env.dead = dead
++    -- Palworld spawns the character 10 km up and places it once the world has loaded: not usable up there.
++    local placed = env.hasPawn and env.pawn:K2_GetActorLocation().Z / 100 < P.tune.world_ceiling_m
++    env.placed = placed
+     -- Palworld mode keeps drawing through a defeat: Steve lies where the character fell. In Minecraft mode
+@@ -24,5 +27,5 @@ function M.tick(env)
+     local body = (env.cflags or 0) & P.ctrl.HOST_BODY ~= 0
+-    env.busy = not env.hasPawn or (dead and not body)
++    env.busy = not placed or (dead and not body)
+     if dead and not wasDead then bump(H.hostDeaths) end
+-    local usable = env.hasPawn and not dead
++    local usable = placed and not dead
+     if usable and not wasUsable then bump(H.hostLife) end
+diff --git a/mc/src/main/java/dev/palcraft/bridge/TerrainManager.java b/mc/src/main/java/dev/palcraft/bridge/TerrainManager.java
+index 2efb145..5f8d7d0 100644
+--- a/mc/src/main/java/dev/palcraft/bridge/TerrainManager.java
++++ b/mc/src/main/java/dev/palcraft/bridge/TerrainManager.java
+@@ -2,2 +2,3 @@ package dev.palcraft.bridge;
+ 
++import dev.palcraft.bridge.gen.Tune;
+ import dev.palcraft.bridge.link.GameState;
+@@ -60,3 +61,3 @@ public final class TerrainManager {
+ 	private static final double RAY_ABOVE = 2.2;
+-	private static final double RAY_BELOW = 40.0;
++	private static final double RAY_BELOW = Tune.RAY_BELOW_M;
+ 	/** Solid terrain thickness below the host game's surface. */
+@@ -116,2 +117,4 @@ public final class TerrainManager {
+ 	private static final java.util.Map<java.util.UUID, Vec3> LAST_POSITIONS = new java.util.HashMap<>();
++	/** Where each player last stood on the ground in Minecraft mode. */
++	private static final java.util.Map<java.util.UUID, Vec3> LAST_SAFE = new java.util.HashMap<>();
+ 	private static boolean preferBackground;
+@@ -149,2 +152,3 @@ public final class TerrainManager {
+ 		LAST_POSITIONS.clear();
++		LAST_SAFE.clear();
+ 		PLATFORM_MOTION.clear();
+@@ -334,4 +338,6 @@ public final class TerrainManager {
+ 			int gen = RECALL_GEN.get();
++			// A character outside the block world is one Palworld has not placed yet: wait for it.
+ 			if (gen != recallDone && STATE.has(Protocol.STATE_PLAYER_VALID) && CoordMap.get() != null
+-				&& !server.getPlayerList().getPlayers().isEmpty()) {
++				&& !server.getPlayerList().getPlayers().isEmpty() && !server.overworld().isOutsideBuildHeight(
++					Mth.floor(CoordMap.get().toMc(STATE.playerPos[0], STATE.playerPos[1], STATE.playerPos[2]).y))) {
+ 				for (ServerPlayer p : server.getPlayerList().getPlayers()) {
+@@ -348,3 +354,6 @@ public final class TerrainManager {
+ 			for (ServerPlayer player : players) {
+-				floorAround(level, player.chunkPosition());
++				// A floor only under a falling Steve: the flat one over 5x5 chunks outlived Palworld's loading.
++				if (player.fallDistance > 2 && !player.getAbilities().flying && !player.isSpectator()) {
++					placeFloor(level, player.position());
++				}
+ 			}
+@@ -385,2 +394,5 @@ public final class TerrainManager {
+ 		for (ServerPlayer player : players) {
++			var step = player.getAttribute(net.minecraft.world.entity.ai.attributes.Attributes.STEP_HEIGHT);
++			if (step != null && step.getBaseValue() != Tune.STEP_HEIGHT_M) step.setBaseValue(Tune.STEP_HEIGHT_M);
++			guardFall(level, player);
+ 			Vec3 previous = LAST_POSITIONS.put(player.getUUID(), player.position());
+@@ -410,2 +422,33 @@ public final class TerrainManager {
+ 
++	/** Safety net: fallen fall_rescue_m with no ground known under him, Steve goes back to where he last stood. */
++	private static void guardFall(ServerLevel level, ServerPlayer player) {
++		if (HostBodyServer.hostMode || !recallSettled(1000) || !player.isAlive() || player.isSpectator()
++			|| player.getAbilities().flying || player.isFallFlying() || player.isInWater()) {
++			return;
++		}
++		Vec3 at = player.position();
++		if (player.onGround()) {
++			LAST_SAFE.put(player.getUUID(), at);
++			return;
++		}
++		Vec3 safe = LAST_SAFE.get(player.getUUID());
++		if (safe == null || at.y > safe.y - Tune.FALL_RESCUE_M) {
++			return;
++		}
++		Column c = COLUMNS.get(ChunkPos.asLong(Mth.floor(at.x), Mth.floor(at.z)));
++		boolean ground = c != null && c.floorBlock() != Integer.MIN_VALUE && c.floorBlock() < at.y;
++		boolean answered = c != null && c.sample() != null && Math.abs(c.sample().y() - at.y) < Tune.FALL_RESCUE_M;
++		if (ground || (!answered && at.y > safe.y - 3 * Tune.FALL_RESCUE_M)) {
++			return; // ground to land on, or its rays are still out
++		}
++		// After a jump over a long way (/tp, flight) he is held where he is.
++		Vec3 to = Math.hypot(at.x - safe.x, at.z - safe.z) <= 4 * Tune.FALL_RESCUE_M ? safe : at;
++		placeFloor(level, to);
++		player.teleportTo(level, to.x, Math.ceil(to.y * 16 - 1e-4) / 16 + 0.01, to.z, player.getYRot(), player.getXRot());
++		player.fallDistance = 0;
++		LAST_SAFE.put(player.getUUID(), to);
++		LOG.info("{} fell {} m with no Palworld ground under him: back to {}", player.getName().getString(),
++			Math.round(safe.y - at.y), to);
++	}
++
+ 	private static void updateMovingSupport(ServerLevel level, CoordMap.Mapping map, List<ServerPlayer> players) {
+@@ -490,2 +533,12 @@ public final class TerrainManager {
+ 		int n = 0;
++		if (priority) {
++			// The way ahead first: the 2 s refresh of the ring around Steve alone can fill every batch.
++			for (Forecast forecast : forecasts) {
++				ServerPlayer player = forecast.player();
++				for (int i = 1; i <= 5; i++) {
++					n = sampleAround(map, Mth.lerp(i / 5.0, player.getX(), forecast.aheadX()), player.getY(),
++						Mth.lerp(i / 5.0, player.getZ(), forecast.aheadZ()), 2, n, true, player.getX(), player.getZ());
++				}
++			}
++		}
+ 		for (ServerPlayer player : players) {
+@@ -564,3 +617,4 @@ public final class TerrainManager {
+ 		boolean obstacle = false;
+-		for (int ray = down + 2; ray < down + RAYS_PER_COLUMN; ray++) {
++		// From the body row up: what only the ankle row touches is under step_height_m, not a 3 m wall.
++		for (int ray = down + 2 + raysPerHeight; ray < down + RAYS_PER_COLUMN; ray++) {
+ 			double height = PROBE_HEIGHTS[(ray - down - 2) / raysPerHeight];
+@@ -667,5 +721,9 @@ public final class TerrainManager {
+ 				top = topBlock;
+-				bottom = hillHit ? Math.min(topBlock, Mth.floor(sampleY) - THICKNESS) : topBlock - THICKNESS;
++				// "Solid right here" (a ray that began inside a hill) is solid under Steve's feet too.
++				boolean inside = lowHit && groundY >= sampleY + RAY_ABOVE - 1e-3;
++				bottom = hillHit || inside ? Math.min(topBlock, Mth.floor(sampleY) - THICKNESS) : topBlock - THICKNESS;
+ 				if (obstacle) {
+ 					top = Math.max(topBlock, Mth.floor(sampleY + WALL_HEIGHT));
++					// A wall over a drop is the wall, not a pillar up from the ground far below.
++					bottom = Math.max(bottom, Mth.floor(sampleY - CLIFF_FILL) - THICKNESS);
+ 				}
+@@ -681,2 +739,9 @@ public final class TerrainManager {
+ 			}
++			if (top == Integer.MIN_VALUE) {
++				// No answer is not open air (landscape not loaded, ray began under a one-sided surface, a Pal in
++				// the way): the column keeps what it holds until an answer finds ground.
++				COLUMNS.put(key, new Column(new TerrainPrefetch.Sample(sampleY, request.fromX(), request.fromZ(), now),
++					old.top(), old.bottom(), old.sample() == null ? Integer.MIN_VALUE : old.floorBlock(), old.height(), old.obstacle()));
++				continue;
++			}
+ 			// Refresh evidence without replacing an unchanged, already refined arch with full cubes.
+diff --git a/sheets/tuning.json b/sheets/tuning.json
+index b0b8525..5241736 100644
+--- a/sheets/tuning.json
++++ b/sheets/tuning.json
+@@ -57,3 +57,7 @@
+     ["player_scan_ticks", 20, "ticks", "lua", "co-op: the other players' Palworld bodies are looked over this often, so a newly equipped tool is hidden too"],
+-    ["player_gone_ms", 1500, "ms", "mc", "co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long"]
++    ["player_gone_ms", 1500, "ms", "mc", "co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long"],
++    ["world_ceiling_m", 5000, "m", "lua", "a character higher than this is not in the world: Palworld keeps one it has not placed yet 10 km up (seen at 10000, 10000, 10000 m)"],
++    ["ray_below_m", 300, "m", "mc", "how far below Steve's feet a column's ground ray reaches; a miss then means no world below, not a drop"],
++    ["fall_rescue_m", 12, "m", "mc", "Steve is put back where he last stood once he has fallen this far with no Palworld ground known under him"],
++    ["step_height_m", 1.1, "m", "mc", "Steve walks up steps this high: Palworld's 45 degree slopes come out as one block per column"]
+   ]

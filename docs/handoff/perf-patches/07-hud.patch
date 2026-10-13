@@ -1,0 +1,152 @@
+diff --git a/host/native/src/palcraft.cpp b/host/native/src/palcraft.cpp
+index 4cd2076..f896a99 100644
+--- a/host/native/src/palcraft.cpp
++++ b/host/native/src/palcraft.cpp
+@@ -13,2 +13,3 @@
+ #include <stdio.h>
++#include <stdlib.h>
+ #include <string.h>
+@@ -570,3 +571,4 @@ static ID3D11ShaderResourceView* g_texSrv[2][kLayers] = {};
+ static UINT g_texW = 0, g_texH = 0;
+-static int g_front = 0;
++// The set on screen, layer by layer: Minecraft leaves the HUD out of most frames, and the last one sent stays up.
++static int g_front[kLayers] = {};
+ static bool g_haveFrame = false, g_frontHand = false;
+@@ -705,2 +707,5 @@ static bool ensure_layers(UINT w, UINT h) {
+     d.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
++    // Empty to start with: a first frame that comes without a HUD shows none, not what the graphics card had there.
++    void* empty = calloc((size_t)w * h, 4);
++    D3D11_SUBRESOURCE_DATA init = {empty, w * 4, 0};
+     for (int s = 0; s < 2; s++)
+@@ -708,4 +713,5 @@ static bool ensure_layers(UINT w, UINT h) {
+             d.Format = i == 1 ? DXGI_FORMAT_R32_FLOAT : DXGI_FORMAT_B8G8R8A8_UNORM;
+-            if (FAILED(g_devc->CreateTexture2D(&d, nullptr, &g_tex[s][i])) ||
++            if (FAILED(g_devc->CreateTexture2D(&d, empty ? &init : nullptr, &g_tex[s][i])) ||
+                 FAILED(g_devc->CreateShaderResourceView(g_tex[s][i], nullptr, &g_texSrv[s][i]))) {
++                free(empty);
+                 release_layers();
+@@ -714,2 +720,3 @@ static bool ensure_layers(UINT w, UINT h) {
+         }
++    free(empty);
+     g_texW = w;
+@@ -735,3 +742,4 @@ static uint8_t* pick_slot(uint64_t poseId) {
+ 
+-// Copies a slot into the back texture set and flips to it. False if Minecraft rewrote the slot meanwhile.
++// Copies the layers a slot holds into their back textures and flips to those. False if Minecraft rewrote the
++// slot meanwhile.
+ static bool upload_slot(uint8_t* h) {
+@@ -743,8 +751,10 @@ static bool upload_slot(uint8_t* h) {
+     bool hand = (flags & PC_FRAME_HAND) != 0;
++    bool sent[kLayers] = {true, true, (flags & PC_FRAME_HUD) != 0, hand};
+     uint64_t layerBytes = (uint64_t)w * ht * 4;
+     const uint8_t* base = h + PC_CONST_FRAME_HDR;
+-    int back = 1 - g_front;
+-    for (int i = 0; i < (hand ? 4 : 3); i++) {
++    for (int i = 0; i < kLayers; i++) {
++        if (!sent[i]) continue;
++        ID3D11Texture2D* back = g_tex[1 - g_front[i]][i];
+         D3D11_MAPPED_SUBRESOURCE m;
+-        if (FAILED(g_ctx->Map(g_tex[back][i], 0, D3D11_MAP_WRITE_DISCARD, 0, &m))) return false;
++        if (FAILED(g_ctx->Map(back, 0, D3D11_MAP_WRITE_DISCARD, 0, &m))) return false;
+         const uint8_t* src = base + layerBytes * i;
+@@ -755,3 +765,3 @@ static bool upload_slot(uint8_t* h) {
+         }
+-        g_ctx->Unmap(g_tex[back][i], 0);
++        g_ctx->Unmap(back, 0);
+     }
+@@ -759,3 +769,4 @@ static bool upload_slot(uint8_t* h) {
+     if (at<volatile uint32_t>(h, PC_FRAME_HEADER_SEQ) != seq) return false;
+-    g_front = back;
++    for (int i = 0; i < kLayers; i++)
++        if (sent[i]) g_front[i] = 1 - g_front[i];
+     g_frontHand = hand;
+@@ -1011,5 +1022,5 @@ static void composite(const LuaView& lua, UINT bbW, UINT bbH) {
+     if (mc) {
+-        srvs[0] = g_texSrv[g_front][0];
+-        srvs[1] = g_texSrv[g_front][1];
+-        srvs[2] = g_texSrv[g_front][2];
++        srvs[0] = g_texSrv[g_front[0]][0];
++        srvs[1] = g_texSrv[g_front[1]][1];
++        srvs[2] = g_texSrv[g_front[2]][2];
+         srvs[3] = haveDepth ? g_depthSrv : nullptr;
+@@ -1017,3 +1028,3 @@ static void composite(const LuaView& lua, UINT bbW, UINT bbH) {
+         srvs[5] = relight ? g_downSrv[0] : nullptr;
+-        srvs[6] = g_texSrv[g_front][3];
++        srvs[6] = g_texSrv[g_front[3]][3];
+     }
+@@ -1080,3 +1091,3 @@ static void composite_over(UINT bbW, UINT bbH) {
+     ID3D11ShaderResourceView* srvs[7] = {};
+-    srvs[2] = g_texSrv[g_front][2];
++    srvs[2] = g_texSrv[g_front[2]][2];
+     g_ctx->PSSetShaderResources(0, 7, srvs);
+diff --git a/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java b/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
+index 72ec69e..7b33036 100644
+--- a/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
++++ b/mc/src/client/java/dev/palcraft/bridge/client/FramePassthrough.java
+@@ -39,3 +39,4 @@ import java.nio.file.StandardOpenOption;
+  *   world, but never hides it behind its walls), then the color buffer is cleared again;</li>
+- *   <li>at the end of the frame: async readback of the HUD layer (drawn as is);</li>
++ *   <li>at the end of the frame: async readback of the HUD layer (drawn as is), on the frames that send
++ *   one (see {@link #hudDue});</li>
+  *   <li>next frame: the readbacks are copied into a frames.shm slot, and only then is that
+@@ -160,2 +161,5 @@ public final class FramePassthrough {
+ 	private static final boolean[] HAND = new boolean[CAPTURES];
++	/** The set's HUD layer was captured (else the host game keeps the last one it was sent). */
++	private static final boolean[] HUD = new boolean[CAPTURES];
++	private static int sinceHud;
+ 	private static final long[] FRAME_ID = new long[CAPTURES];
+@@ -270,2 +274,3 @@ public final class FramePassthrough {
+ 		pboH = h;
++		sinceHud = Integer.MAX_VALUE - 1; // the host game makes new textures for a new size: send every layer
+ 		if (captureTarget != null) captureTarget.destroyBuffers();
+@@ -363,2 +368,15 @@ public final class FramePassthrough {
+ 
++	/**
++	 * The HUD changes with Minecraft's ticks, twenty a second, and is one of the three or four full layers
++	 * of a frame. With no screen open it goes out with every Tune.HUD_EVERY_FRAMES-th frame; a screen
++	 * follows the mouse and is sent every frame.
++	 */
++	private static boolean hudDue(Minecraft mc) {
++		if (mc.screen != null || GPU_FRAME[cur] || ++sinceHud >= Tune.HUD_EVERY_FRAMES) {
++			sinceHud = 0;
++			return true;
++		}
++		return false;
++	}
++
+ 	/**
+@@ -390,6 +408,9 @@ public final class FramePassthrough {
+ 		if (worldCaptured) {
+-			RenderTarget main = mc.getMainRenderTarget();
+-			GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, main.frameBufferId);
+-			captureLayer(main,2,GL12.GL_BGRA,GL12.GL_UNSIGNED_INT_8_8_8_8_REV);
+-			GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
++			HUD[cur] = hudDue(mc);
++			if (HUD[cur]) {
++				RenderTarget main = mc.getMainRenderTarget();
++				GlStateManager._glBindFramebuffer(GL30.GL_READ_FRAMEBUFFER, main.frameBufferId);
++				captureLayer(main,2,GL12.GL_BGRA,GL12.GL_UNSIGNED_INT_8_8_8_8_REV);
++				GL15.glBindBuffer(GL21.GL_PIXEL_PACK_BUFFER, 0);
++			}
+ 			FRAME_ID[cur] = ++frameCounter;
+@@ -444,4 +465,6 @@ public final class FramePassthrough {
+ 		boolean hand = HAND[set];
++		boolean hud = HUD[set];
+ 		long copyFrom = System.nanoTime();
+ 		for (int i = 0; !GPU_FRAME[set] && i < (hand ? 4 : 3); i++) {
++			if (i == 2 && !hud) continue;
+ 			copiedLayers++;
+@@ -460,3 +483,4 @@ public final class FramePassthrough {
+ 		frames.putInt(base + 0x08, h);
+-		frames.putInt(base + 0x0C, (hand ? 7 : 3) | (GPU_FRAME[set] ? 8 : 0));
++		// Protocol flags "frame": WORLD, HUD, HAND, GPU.
++		frames.putInt(base + 0x0C, 1 | (hud ? 2 : 0) | (hand ? 4 : 0) | (GPU_FRAME[set] ? 8 : 0));
+ 		frames.putInt(base + 0x30,set);
+diff --git a/sheets/tuning.json b/sheets/tuning.json
+index 526b573..abd4298 100644
+--- a/sheets/tuning.json
++++ b/sheets/tuning.json
+@@ -58,2 +58,3 @@
+     ["player_gone_ms", 1500, "ms", "mc", "co-op: a friend's Minecraft player leaves when Palworld has not listed them for this long"],
++    ["hud_every_frames", 2, "frames", "mc", "with no screen open, Minecraft's HUD layer goes to Palworld with every this-many-th frame (1 = every frame); the last one sent stays up in between"],
+     ["entity_far_tables", 15, "tables", "lua", "every Palworld character is checked for being within entity_radius_m once in this many entity tables; in between only those found within it are asked"]

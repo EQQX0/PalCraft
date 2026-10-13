@@ -13,12 +13,13 @@ local CONTROL_SIZE = 0x64
 
 -- The other systems. Each has tick(env); a system that fails to load is reported and skipped.
 local systems = {}
-for _, name in ipairs({ "life", "rays", "probe", "body", "hud", "entities", "combat", "selftest" }) do
+for _, name in ipairs({ "life", "rays", "probe", "body", "hud", "players", "entities", "combat", "selftest" }) do
     local ok, m = pcall(require, name)
     if ok then systems[#systems + 1] = { name = name, mod = m }
     else U.log("system " .. name .. " not loaded: " .. tostring(m)) end
 end
 
+local okPlayers, players = pcall(require, "players")
 local runtime, dev
 local tick = 0
 local lastFrame = -1
@@ -73,7 +74,7 @@ local function on_tick(pc)
     local ctrl = mc_alive() and shm.snapshot(OFF.control, CONTROL_SIZE) or nil
     local cflags = ctrl and shm.field(ctrl, C.flags) or 0
     env.pc, env.pawn, env.hasPawn, env.ctrl, env.cflags, env.tick, env.linked = pc, pawn, hasPawn, ctrl, cflags, tick, ctrl ~= nil
-    env.busy, env.dead = not hasPawn, false
+    env.busy, env.dead, env.steves, env.placed = not hasPawn, false, false, hasPawn
 
     -- Life first: it decides whether the character is usable this tick.
     for _, s in ipairs(systems) do
@@ -84,7 +85,8 @@ local function on_tick(pc)
     local camPos, camTarget, fovY = { 0, 0, 0 }, { 0, 0, 1 }, 70
     local feet, quat = { 0, 0, 0 }, { 0, 0, 0, 1 }
     if hasPawn then
-        flags = flags | P.state.PLAYER_VALID | P.state.CAMERA_VALID
+        camera.frame(pc)
+        flags = flags | P.state.CAMERA_VALID | (env.placed and P.state.PLAYER_VALID or 0)
         local usable = ctrl ~= nil and not env.busy
         -- Palworld mode: the pose is Palworld's own camera, echoed by Minecraft once Steve is drawn for it.
         local body = usable and cflags & P.ctrl.HOST_BODY ~= 0
@@ -116,7 +118,10 @@ local function on_tick(pc)
             standin.release(pawn)
         end
         -- In a cutscene Palworld's camera shows its own character: Steve is not drawn there.
-        standin.hide(pawn, usable and cflags & P.ctrl.HIDE_HUNTER ~= 0 and (not camera.yielding() or (body and steveShot)))
+        local shot = not camera.yielding() or (body and steveShot)
+        standin.hide(pawn, usable and cflags & P.ctrl.HIDE_HUNTER ~= 0 and shot, okPlayers and players.any())
+        -- Friends are drawn as Minecraft players wherever Minecraft's picture is in Palworld's.
+        env.steves = usable and cflags & P.ctrl.COMPOSITE ~= 0 and shot
         if body and camera.yielding() then
             -- Palworld's own shot: Minecraft draws Steve from that camera.
             camPos, camTarget, fovY = camera.own(pc, aspect)
@@ -149,27 +154,20 @@ end
 
 function M.start(runtimeDir, isDev)
     runtime, dev = runtimeDir, isDev
-    local hooked = false
     local gen = _G.PALCRAFT_GEN -- a reloaded copy of the mod retires this one's hook
-    local function try_hook()
-        if hooked then return end
-        local ok, err = pcall(RegisterHook, P.hook.tick, function(ctx)
-            if gen ~= _G.PALCRAFT_GEN then return end
-            U.guard("tick", on_tick, ctx:get())
-            if dev then U.guard("dev", require("dev").tick) end
-        end)
-        if ok then
-            hooked = true
-            U.log("frame loop hooked")
-        end
-    end
-    try_hook()
-    -- The player controller's class only exists once a world is loading: keep trying until then.
-    LoopAsync(2000, function()
-        if hooked or gen ~= _G.PALCRAFT_GEN then return true end
-        ExecuteInGameThread(try_hook)
-        return false
+    -- Palworld's in-world HUD belongs to the player at this PC and ticks once per frame; the title screen
+    -- has another HUD. Its class is built into Palworld, so the hook goes in before any world exists.
+    -- Up to 0.2.1 the hook sat on the Blueprint tick of the player controller. With one Blueprint function
+    -- hooked, UE4SS builds the name of every Blueprint function Palworld calls, on every thread, to look for
+    -- its hook: Palworld died in world loads that way.
+    local ok, err = pcall(RegisterHook, P.hook.tick, function(ctx)
+        if gen ~= _G.PALCRAFT_GEN then return end
+        local hud = ctx:get()
+        local pc = hud:IsValid() and hud.PlayerOwner
+        if pc and pc:IsValid() then U.guard("tick", on_tick, pc) end
+        if dev then U.guard("dev", require("dev").tick) end
     end)
+    U.log(ok and "frame loop hooked" or "frame loop NOT hooked: " .. tostring(err))
 end
 
 return M

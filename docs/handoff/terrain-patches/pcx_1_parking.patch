@@ -1,0 +1,38 @@
+--- a/host/lua/PalCraft/Scripts/bridge.lua
++++ b/host/lua/PalCraft/Scripts/bridge.lua
+@@ -83,3 +83,3 @@ local function on_tick(pc)
+     env.pc, env.pawn, env.hasPawn, env.ctrl, env.cflags, env.tick, env.linked = pc, pawn, hasPawn, ctrl, cflags, tick, ctrl ~= nil
+-    env.busy, env.dead, env.steves = not hasPawn, false, false
++    env.busy, env.dead, env.steves, env.placed = not hasPawn, false, false, hasPawn
+ 
+@@ -94,3 +94,3 @@ local function on_tick(pc)
+     if hasPawn then
+-        flags = flags | P.state.PLAYER_VALID | P.state.CAMERA_VALID
++        flags = flags | P.state.CAMERA_VALID | (env.placed and P.state.PLAYER_VALID or 0)
+         local usable = ctrl ~= nil and not env.busy
+--- a/host/lua/PalCraft/Scripts/life.lua
++++ b/host/lua/PalCraft/Scripts/life.lua
+@@ -21,2 +21,5 @@ function M.tick(env)
+     env.dead = dead
++    -- Palworld spawns the character 10 km up and places it once the world has loaded: not usable up there.
++    local placed = env.hasPawn and env.pawn:K2_GetActorLocation().Z / 100 < P.tune.world_ceiling_m
++    env.placed = placed
+     -- Palworld mode keeps drawing through a defeat: Steve lies where the character fell. In Minecraft mode
+@@ -24,5 +27,5 @@ function M.tick(env)
+     local body = (env.cflags or 0) & P.ctrl.HOST_BODY ~= 0
+-    env.busy = not env.hasPawn or (dead and not body)
++    env.busy = not placed or (dead and not body)
+     if dead and not wasDead then bump(H.hostDeaths) end
+-    local usable = env.hasPawn and not dead
++    local usable = placed and not dead
+     if usable and not wasUsable then bump(H.hostLife) end
+--- a/mc/src/main/java/dev/palcraft/bridge/TerrainManager.java
++++ b/mc/src/main/java/dev/palcraft/bridge/TerrainManager.java
+@@ -334,4 +338,6 @@ public final class TerrainManager {
+ 			int gen = RECALL_GEN.get();
++			// A character outside the block world is one Palworld has not placed yet: wait for it.
+ 			if (gen != recallDone && STATE.has(Protocol.STATE_PLAYER_VALID) && CoordMap.get() != null
+-				&& !server.getPlayerList().getPlayers().isEmpty()) {
++				&& !server.getPlayerList().getPlayers().isEmpty() && !server.overworld().isOutsideBuildHeight(
++					Mth.floor(CoordMap.get().toMc(STATE.playerPos[0], STATE.playerPos[1], STATE.playerPos[2]).y))) {
+ 				for (ServerPlayer p : server.getPlayerList().getPlayers()) {
